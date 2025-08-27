@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voucher App</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: auto; padding: 20px; }
+    input, button { padding: 8px; margin: 5px; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>Voucher Form</h2>
+  <input type="text" id="voucherNo" placeholder="Voucher No">
+  <input type="date" id="date">
+  <input type="number" id="amount" placeholder="Amount">
+  <input type="text" id="amountWords" placeholder="Amount in Words" readonly>
+  <button onclick="saveVoucher()">Save</button>
+
+  <script>
+    function numberToWords(num) {
+      const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+      const b = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+      if (num < 20) return a[num];
+      if (num < 100) return b[Math.floor(num/10)] + (num%10 ? ' ' + a[num%10] : '');
+      if (num < 1000) return a[Math.floor(num/100)] + ' Hundred ' + (num%100 ? numberToWords(num%100) : '');
+      return num;
+    }
+
+    document.getElementById('amount').addEventListener('input', function() {
+      let amt = parseInt(this.value, 10);
+      document.getElementById('amountWords').value = !isNaN(amt) ? numberToWords(amt) + " Rupees Only" : '';
+    });
+
+    function saveVoucher() {
+      const voucher = {
+        voucherNo: document.getElementById('voucherNo').value,
+        date: document.getElementById('date').value,
+        amount: document.getElementById('amount').value,
+        amountWords: document.getElementById('amountWords').value
+      };
+
+      fetch("https://YOUR_VERCEL_APP.vercel.app/api/saveVoucher", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voucher })
+      })
+      .then(res => res.json())
+      .then(data => alert(data.message))
+      .catch(err => console.error(err));
+    }
+  </script>
+</body>
+</html>
