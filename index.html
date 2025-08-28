@@ -1,1439 +1,1380 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Voucher & Expenses Manager</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
-  <link rel="icon" href="data:," />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <!-- Chart.js for Pie Chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- SheetJS for Excel Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
     :root{
-      --bg: #0b1020;             /* surfaces (dark mode friendly) */
-      --panel:#0f172a;
-      --muted:#94a3b8;
-      --border:#1e293b;
-      --text:#e2e8f0;
-      --brand:#3b82f6;           /* primary */
-      --brand-2:#22c55e;         /* success */
-      --warn:#f59e0b;            /* warning */
-      --danger:#ef4444;          /* danger */
-      --card: #111827;
+      --bg: #0b1020;
+      --bg-2: #121833;
+      --card: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --primary: #6366f1;
+      --primary-2: #818cf8;
+      --accent: #14b8a6;
+      --accent-2: #22d3ee;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --border: #1f2937;
       --shadow: 0 10px 25px rgba(0,0,0,.25);
-      --radius:14px;
+      --radius: 12px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%}
-    body{
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-      background: linear-gradient(180deg,#050816 0%,#0b1020 50%,#0a132a 100%);
-      color:var(--text);
-    }
+    html,body{margin:0;padding:0;background:linear-gradient(180deg,var(--bg),#070a17);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
     a{color:inherit;text-decoration:none}
     .container{max-width:1200px;margin:0 auto;padding:24px}
 
     /* Navbar */
     .navbar{
-      position:sticky; top:0; z-index:50;
-      backdrop-filter:saturate(150%) blur(10px);
-      background:linear-gradient(180deg, rgba(2,6,23,.85), rgba(2,6,23,.6));
-      border-bottom:1px solid var(--border);
+      position: sticky; top:0; z-index:1000;
+      backdrop-filter: blur(10px);
+      background: rgba(11,16,32,.75);
+      border-bottom: 1px solid var(--border);
     }
-    .navbar-inner{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:16px; padding:14px 20px; max-width:1200px; margin:0 auto;
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.3px}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(45deg,var(--accent),var(--accent-2));box-shadow:0 0 10px var(--accent)}
+    .nav-links{display:flex;gap:10px;flex-wrap:wrap}
+    .nav-links a{
+      padding:10px 14px;border-radius:10px;border:1px solid transparent; color:var(--text);
     }
-    .brand{
-      display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px;
+    .nav-links a.active, .nav-links a:hover{
+      background:linear-gradient(180deg,rgba(99,102,241,.15),rgba(99,102,241,.05));
+      border-color: rgba(99,102,241,.35);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
     }
-    .brand-badge{
-      width:34px;height:34px;border-radius:10px;background:
-        conic-gradient(from 180deg at 50% 50%, #3b82f6, #22c55e, #f59e0b, #3b82f6);
-      box-shadow: inset 0 0 12px rgba(255,255,255,.2), 0 6px 20px rgba(0,0,0,.35);
+    .userbox{display:flex;align-items:center;gap:12px}
+    .badge{
+      padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)
     }
-    .nav{
-      display:flex; gap:6px; flex-wrap:wrap;
-    }
-    .nav a{
-      padding:10px 14px;border-radius:10px;color:var(--muted);font-weight:600;
-      border:1px solid transparent; transition:.2s;
-    }
-    .nav a:hover{color:var(--text);background:rgba(59,130,246,.08);border-color:#1e293b}
-    .nav a.active{color:var(--text); background:linear-gradient(180deg,rgba(59,130,246,.22), rgba(59,130,246,.06)); border-color:#1f3b63}
-
-    /* Layout cards */
-    .grid{
-      display:grid; gap:18px;
-    }
-    @media(min-width:768px){
-      .grid.cols-3{grid-template-columns:repeat(3,1fr)}
-      .grid.cols-2{grid-template-columns:repeat(2,1fr)}
-      .grid.cols-4{grid-template-columns:repeat(4,1fr)}
-    }
-    .card{
-      background:linear-gradient(180deg, rgba(17,24,39,.7), rgba(2,6,23,.7));
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-    .card .card-header{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 16px; border-bottom:1px dashed #1f2937; color:#cbd5e1;
-      background:linear-gradient(180deg, rgba(30,41,59,.4), rgba(2,6,23,0));
-    }
-    .card .card-body{padding:16px}
-    .muted{color:var(--muted)}
-    .spacer{height:12px}
-
-    /* Buttons */
     .btn{
-      --bg: rgba(59,130,246,.15); --b: #1f3b63; --c:#cbd5e1;
-      display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
-      padding:10px 14px; border-radius:10px; border:1px solid var(--b); background:var(--bg); color:var(--c);
-      font-weight:600; transition:.2s; text-wrap:nowrap;
+      appearance:none;border:none;background:var(--primary);color:white;padding:10px 14px;border-radius:10px;cursor:pointer;
+      box-shadow: var(--shadow); transition:.15s transform, .15s opacity;
     }
-    .btn:hover{filter:brightness(1.05)}
-    .btn:disabled{opacity:.5; cursor:not-allowed}
-    .btn.primary{--bg:linear-gradient(180deg, rgba(59,130,246,.35), rgba(59,130,246,.08)); --b:#1f3b63}
-    .btn.success{--bg:linear-gradient(180deg, rgba(34,197,94,.35), rgba(34,197,94,.08)); --b:#1b4d34}
-    .btn.warn{--bg:linear-gradient(180deg, rgba(245,158,11,.3), rgba(245,158,11,.08)); --b:#614015}
-    .btn.danger{--bg:linear-gradient(180deg, rgba(239,68,68,.35), rgba(239,68,68,.08)); --b:#5a2323}
-    .btn.ghost{--bg:transparent; --b:transparent; color:#a3b2c8}
-    .btn.small{padding:6px 10px; font-size:.9rem; border-radius:8px}
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .btn.ghost{background:transparent;color:var(--muted)}
+    .btn.success{background:var(--success)}
+    .btn.warn{background:var(--warning);color:#09251c}
+    .btn.danger{background:var(--danger)}
+    .btn.icon{display:inline-flex;align-items:center;gap:8px}
+    .btn.small{padding:6px 10px;border-radius:8px;font-size:14px}
 
-    .btn-group{display:flex; gap:8px; flex-wrap:wrap}
+    /* Sections */
+    section{display:none;animation:fade .2s ease; }
+    section.active{display:block}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-    /* Form */
-    .form-row{display:grid; gap:12px}
-    @media(min-width:768px){ .form-row.cols-2{grid-template-columns:1fr 1fr} .form-row.cols-3{grid-template-columns:repeat(3,1fr)} }
-    label{font-size:.9rem; color:#9fb1c8; display:block; margin-bottom:6px}
-    input, select, textarea, datalist{
-      width:100%; padding:11px 12px; border-radius:10px; outline:none;
-      background:rgba(2,6,23,.6); border:1px solid #2a3650; color:var(--text);
-      transition:.2s; box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+    /* Cards and panels */
+    .panel{
+      background: linear-gradient(180deg,var(--card), #0c1329);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:18px;
     }
-    input:focus, select:focus, textarea:focus{border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.2)}
-    input[readonly]{opacity:.8}
+    .panel h3{margin:0 0 10px}
+    .row{display:grid;gap:16px}
+    .row.cols-2{grid-template-columns: repeat(2, minmax(0,1fr))}
+    .row.cols-3{grid-template-columns: repeat(3, minmax(0,1fr))}
+    .row.cols-4{grid-template-columns: repeat(4, minmax(0,1fr))}
+    @media(max-width:900px){.row.cols-3,.row.cols-4{grid-template-columns: repeat(2, minmax(0,1fr))}}
+    @media(max-width:640px){.row.cols-2,.row.cols-3,.row.cols-4{grid-template-columns: 1fr}}
+
+    /* Dashboard */
+    .card{
+      padding:16px;border-radius:14px;border:1px solid var(--border);position:relative;overflow:hidden;
+      background: radial-gradient(1200px 300px at -10% -60%, rgba(99,102,241,.12), transparent 50%), linear-gradient(180deg,var(--card),#0c142c);
+    }
+    .card .label{color:var(--muted);font-size:13px}
+    .card .value{font-size:28px;font-weight:700;margin-top:4px}
+    .chip{display:inline-flex;gap:8px; align-items:center; padding:6px 10px;border-radius:999px;border:1px dashed var(--border);font-size:12px;color:var(--muted)}
+
+    /* Forms */
+    form .grid{display:grid;gap:14px;grid-template-columns: repeat(12, 1fr)}
+    form .col-12{grid-column: span 12}
+    form .col-6{grid-column: span 6}
+    form .col-4{grid-column: span 4}
+    form .col-3{grid-column: span 3}
+    form .col-2{grid-column: span 2}
+    @media(max-width:900px){form .col-6{grid-column: span 12} form .col-4{grid-column: span 6} form .col-3{grid-column: span 6}}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input, select, textarea{
+      width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0a1126;color:var(--text);
+      outline:none;transition:border-color .15s, box-shadow .15s;
+    }
+    input:focus, select:focus, textarea:focus{border-color: rgba(129,140,248,.6);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+
+    /* Tabs */
+    .tabs{display:flex;gap:8px;margin-bottom:12px; flex-wrap:wrap}
+    .tab{padding:10px 14px;border-radius:10px;border:1px solid var(--border);cursor:pointer}
+    .tab.active{background:linear-gradient(180deg,rgba(34,211,238,.12),rgba(34,197,94,.05));border-color:rgba(20,184,166,.35)}
 
     /* Tables */
-    .table-tools{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
-    .search{
-      display:flex; align-items:center; gap:8px; background:rgba(2,6,23,.6); border:1px solid #25324a; padding:8px 10px; border-radius:10px; color:#a8b3c7;
+    .table-wrap{margin-top:16px}
+    .table-tools{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:10px}
+    .search{flex:1}
+    table{width:100%;border-collapse:separate;border-spacing:0;width:100%;overflow:hidden;border-radius:12px;border:1px solid var(--border)}
+    thead th{position:sticky;top:0;background:#0b132a;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;color:var(--muted);text-align:left;padding:12px;cursor:pointer;user-select:none}
+    tbody td{padding:12px;border-bottom:1px solid var(--border)}
+    tbody tr:hover{background:rgba(99,102,241,.06)}
+    tr.selected{outline:2px solid var(--primary-2);background:rgba(129,140,248,.08)}
+
+    /* Login overlay */
+    .overlay{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background: radial-gradient(600px 300px at 10% -10%, rgba(34,197,94,.1), transparent 50%), rgba(2,6,23,.85);
+      z-index: 2000;
     }
-    .search input{background:transparent; border:none; outline:none; color:#e2e8f0; padding:6px 8px}
-    table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid #1f2937; border-radius:12px}
-    thead th{
-      text-align:left; font-weight:700; color:#9fb1c8; background:rgba(15,23,42,.8); padding:12px; font-size:.95rem; position:relative;
-      border-bottom:1px solid #1f2937; cursor:pointer; user-select:none;
-    }
-    thead th .sort{font-size:.8rem; color:#61708a; margin-left:6px}
-    tbody td{padding:12px; border-bottom:1px dashed #23314e; color:#d6dfeb; vertical-align:top}
-    tbody tr:hover{background:rgba(59,130,246,.06)}
-    tbody tr.selected{background:rgba(59,130,246,.16)}
-    tfoot td{padding:10px; background:rgba(2,6,23,.55); color:#9fb1c8}
-    .right{text-align:right}
+    .login-card{width:min(420px, calc(100% - 32px));padding:22px;border-radius:14px;background:linear-gradient(180deg,var(--card),#0c142c);border:1px solid var(--border);box-shadow: var(--shadow)}
+    .login-card h2{margin:0 0 4px}
+    .login-card p{margin:0 0 14px;color:var(--muted);font-size:14px}
+    .hint{font-size:12px;color:var(--muted)}
+    .error{color:#fecaca;font-size:13px;margin-top:6px;min-height:18px}
 
-    /* Pages */
-    .page{display:none; animation:fade .25s ease}
-    .page.active{display:block}
-    @keyframes fade{from{opacity:.5;transform:translateY(6px)} to{opacity:1;transform:translateY(0)}}
-
-    /* Subtabs */
-    .subtabs{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap}
-    .subtab{
-      padding:10px 14px; border-radius:10px; border:1px solid #2a3650; color:#9fb1c8; background:rgba(2,6,23,.5);
-      cursor:pointer; font-weight:700;
-    }
-    .subtab.active{color:#e2e8f0; background:linear-gradient(180deg, rgba(59,130,246,.22), rgba(59,130,246,.06)); border-color:#1f3b63}
-    .subpage{display:none}
-    .subpage.active{display:block}
-
-    /* Tiny badge / pill */
-    .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid #2a3650; color:#94a3b8; background:rgba(2,6,23,.5); font-weight:600}
-
-    /* Export dropdown */
-    .dropdown{position:relative; display:inline-block}
-    .dropdown-menu{
-      position:absolute; right:0; min-width:180px; background:rgba(2,6,23,.95); border:1px solid #2a3650; border-radius:10px; padding:6px; box-shadow:var(--shadow);
-      display:none; z-index:10;
-    }
-    .dropdown.open .dropdown-menu{display:block}
-    .dropdown-menu button{width:100%; text-align:left; margin:2px 0}
-
-    /* Toasts */
-    .toast{
-      position:fixed; right:18px; bottom:18px; background:rgba(2,6,23,.95); border:1px solid #2a3650; color:#d4e0f0;
-      padding:12px 14px; border-radius:10px; box-shadow:var(--shadow); z-index:1000; min-width:220px;
-    }
-
-    /* Print */
+    /* Print rules */
     @media print{
-      body{background:white}
-      .navbar, .no-print{display:none !important}
-      .printable{display:block}
+      body{background:#fff;color:#000}
+      .navbar,.no-print,.tabs{display:none !important}
+      section{display:block !important}
+      #print-area{display:block !important}
+      .panel, .card, .table-wrap, .login-card{box-shadow:none;border: none}
     }
+    #print-area{display:none}
+    .voucher-print{
+      max-width:720px;margin:0 auto;padding:24px;border:1px dashed #888;border-radius:8px;background:#fff;color:#000
+    }
+    .voucher-print h2{margin-top:0}
+    .voucher-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .voucher-grid div{padding:6px 8px;border:1px solid #ddd;border-radius:6px;background:#fafafa}
   </style>
 </head>
 <body>
-  <header class="navbar">
-    <div class="navbar-inner">
-      <div class="brand">
-        <div class="brand-badge"></div>
-        <div>Voucher & Expenses Manager</div>
+
+  <!-- Login Overlay -->
+  <div class="overlay" id="loginOverlay" aria-modal="true" role="dialog">
+    <div class="login-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2>Welcome</h2>
+        <span class="chip">Login Required</span>
       </div>
-      <nav class="nav">
-        <a href="#home" data-route="home" class="active">Home</a>
-        <a href="#voucher" data-route="voucher">Voucher</a>
-        <a href="#expenses" data-route="expenses">Expenses</a>
-        <a href="#about" data-route="about">About</a>
-      </nav>
+      <p>Sign in to access vouchers, expenses, dashboard, and admin panel.</p>
+      <form id="loginForm">
+        <div class="row">
+          <div>
+            <label>Username</label>
+            <input type="text" id="loginUser" autocomplete="username" required />
+          </div>
+          <div style="margin-top:10px">
+            <label>Password</label>
+            <input type="password" id="loginPass" autocomplete="current-password" required />
+          </div>
+          <div class="toolbar" style="margin-top:12px">
+            <button class="btn icon" type="submit">🔓 Login</button>
+          </div>
+        </div>
+        <div class="error" id="loginError"></div>
+      </form>
     </div>
-  </header>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar no-print">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> Expense & Voucher Manager</div>
+      <div class="nav-links">
+        <a href="#" data-nav="home" class="active">Home</a>
+        <a href="#" data-nav="voucher">Voucher</a>
+        <a href="#" data-nav="expenses">Expenses</a>
+        <a href="#" data-nav="admin" id="adminNav">Admin</a>
+        <a href="#" data-nav="about">About</a>
+      </div>
+      <div class="userbox">
+        <span class="badge" id="userBadge">Guest</span>
+        <button class="btn ghost small" id="logoutBtn" title="Logout" style="display:none">⎋ Logout</button>
+      </div>
+    </div>
+  </nav>
 
   <main class="container">
-    <!-- Home -->
-    <section id="page-home" class="page active">
-      <div class="grid">
-        <div class="card">
-          <div class="card-header"><span>Dashboard Summary</span><span class="pill">Live</span></div>
-          <div class="card-body">
-            <div class="grid cols-3">
-              <div class="card" style="background:linear-gradient(180deg, rgba(59,130,246,.25), rgba(59,130,246,.05));">
-                <div class="card-body">
-                  <div class="muted">Total Vouchers</div>
-                  <div id="d-voucher-count" style="font-size:1.6rem; font-weight:800; margin-top:6px">0</div>
-                </div>
-              </div>
-              <div class="card" style="background:linear-gradient(180deg, rgba(34,197,94,.25), rgba(34,197,94,.05));">
-                <div class="card-body">
-                  <div class="muted">Total Voucher Amount</div>
-                  <div id="d-voucher-amount" style="font-size:1.6rem; font-weight:800; margin-top:6px">₹0</div>
-                </div>
-              </div>
-              <div class="card" style="background:linear-gradient(180deg, rgba(245,158,11,.25), rgba(245,158,11,.05));">
-                <div class="card-body">
-                  <div class="muted">Balance</div>
-                  <div id="d-balance" style="font-size:1.6rem; font-weight:800; margin-top:6px">₹0</div>
-                </div>
-              </div>
-            </div>
-            <div class="spacer"></div>
-            <div class="grid cols-3">
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Total Advances</div>
-                  <div id="d-adv" style="font-size:1.4rem; font-weight:800; margin-top:6px">₹0</div>
-                </div>
-              </div>
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Total Expenses</div>
-                  <div id="d-exp" style="font-size:1.4rem; font-weight:800; margin-top:6px">₹0</div>
-                </div>
-              </div>
-              <div class="card">
-                <div class="card-body">
-                  <canvas id="pieChart" height="140"></canvas>
-                  <div class="muted" style="margin-top:8px">Expenses vs Balance (of Advances)</div>
-                  <div id="deficit-note" class="pill" style="display:none; margin-top:8px; border-color:#614015; color:#f7c86a">Deficit exceeds advances</div>
-                </div>
-              </div>
-            </div>
-            <div class="spacer"></div>
-            <div class="grid cols-3">
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Quick Actions</div>
-                  <div class="spacer"></div>
-                  <div class="btn-group">
-                    <button class="btn primary" onclick="Router.go('voucher')">🧾 Voucher Form</button>
-                    <button class="btn success" onclick="Router.go('expenses'); setSubtab('advance')">💵 Advance</button>
-                    <button class="btn" onclick="Router.go('expenses'); setSubtab('expenses')">🧮 Expenses</button>
-                    <button class="btn" onclick="Router.go('expenses'); setSubtab('breakup')">⚙️ Breakup</button>
-                  </div>
-                </div>
-              </div>
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Tips</div>
-                  <ul style="margin:8px 0 0 18px; color:#c5d2e6">
-                    <li>Click table headers to sort. Use the search box to filter.</li>
-                    <li>Click a row to select for Update, Delete, or Print.</li>
-                    <li>Data is saved to your browser (localStorage).</li>
-                  </ul>
-                </div>
-              </div>
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Version</div>
-                  <div style="font-weight:700; font-size:1.1rem; margin-top:6px">v1.0.0</div>
-                  <div class="muted" style="margin-top:6px">No backend required. Export to Excel, print-friendly views.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div><!-- /grid -->
-    </section>
 
-    <!-- Voucher -->
-    <section id="page-voucher" class="page">
-      <div class="grid">
+    <!-- HOME -->
+    <section id="home" class="active">
+      <div class="row cols-3">
         <div class="card">
-          <div class="card-header">
-            <span>Voucher Form</span>
-            <span class="pill">🧾 Payment / General Voucher</span>
-          </div>
-          <div class="card-body">
-            <div class="form-row cols-3">
-              <div>
-                <label>Voucher No.</label>
-                <input type="text" id="v-voucherNo" placeholder="Auto-generated; you can edit" />
-              </div>
-              <div>
-                <label>Date</label>
-                <input type="date" id="v-date" />
-              </div>
-              <div>
-                <label>Paid To / Ms</label>
-                <input type="text" id="v-paidTo" placeholder="Name" />
-              </div>
-            </div>
-            <div class="form-row cols-3" style="margin-top:12px">
-              <div>
-                <label>Purpose (By Cash / Against)</label>
-                <input type="text" id="v-purpose" placeholder="By Cash / Against ..." />
-              </div>
-              <div>
-                <label>Amount (Rs)</label>
-                <input type="number" id="v-amount" min="0" step="1" placeholder="0" />
-              </div>
-              <div>
-                <label>Amount in Words</label>
-                <input type="text" id="v-amountWords" readonly placeholder="Auto-filled" />
-              </div>
-            </div>
-            <div class="spacer"></div>
-            <div class="btn-group no-print">
-              <button class="btn success" id="v-add">➕ Add Voucher</button>
-              <button class="btn primary" id="v-update" disabled>✏️ Update Voucher</button>
-              <button class="btn danger" id="v-delete" disabled>❌ Delete Voucher</button>
-              <button class="btn" id="v-print">🖨️ Print Voucher</button>
-              <div class="dropdown">
-                <button class="btn" id="v-export">📊 Export</button>
-                <div class="dropdown-menu">
-                  <button class="btn small" id="v-export-xlsx">Export to Excel (.xlsx)</button>
-                  <button class="btn small" id="v-export-csv">Export to CSV (.csv)</button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="label">Total Voucher Count</div>
+          <div class="value" id="totalVoucherCount">0</div>
+          <div class="chip">📄 Vouchers</div>
         </div>
-
         <div class="card">
-          <div class="card-header">
-            <span>Vouchers</span>
-            <div class="table-tools">
-              <div class="search">
-                🔎
-                <input id="v-search" placeholder="Search any column..." />
-              </div>
-              <div class="muted">Click headers to sort</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <div style="overflow:auto">
-              <table id="v-table">
-                <thead>
-                  <tr>
-                    <th data-key="voucherNo">Voucher No <span class="sort">↕</span></th>
-                    <th data-key="date">Date <span class="sort">↕</span></th>
-                    <th data-key="paidTo">Paid To <span class="sort">↕</span></th>
-                    <th data-key="purpose">Purpose <span class="sort">↕</span></th>
-                    <th data-key="amount" class="right">Amount <span class="sort">↕</span></th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-                <tfoot>
-                  <tr><td colspan="4" class="right">Total</td><td id="v-total" class="right">₹0</td></tr>
-                </tfoot>
-              </table>
-            </div>
+          <div class="label">Total Voucher Amount</div>
+          <div class="value" id="totalVoucherAmount">₹0</div>
+          <div class="chip">💰 Amount</div>
+        </div>
+        <div class="card">
+          <div class="label">Advance vs Expenses</div>
+          <div class="value"><span id="totalAdvanceAmount">₹0</span> / <span id="totalExpensesAmount">₹0</span></div>
+          <div class="chip">Balance: <strong id="totalBalance">₹0</strong></div>
+        </div>
+      </div>
+
+      <div class="row cols-2" style="margin-top:16px">
+        <div class="panel">
+          <h3>Summary Pie</h3>
+          <canvas id="summaryChart" height="140"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Quick Shortcuts</h3>
+          <div class="row cols-2">
+            <button class="btn icon" onclick="App.navigate('voucher')">🧾 Voucher Form</button>
+            <button class="btn icon" onclick="App.navigate('expenses'); App.showExpensesTab('advance')">💸 Advance</button>
+            <button class="btn icon" onclick="App.navigate('expenses'); App.showExpensesTab('expenses')">🧰 Expenses</button>
+            <button class="btn icon" onclick="App.navigate('expenses'); App.showExpensesTab('breakup')">🧩 Breakup</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Expenses -->
-    <section id="page-expenses" class="page">
-      <div class="card">
-        <div class="card-header">
-          <span>Expenses Manager</span>
-          <span class="pill">💼 Advances, Expenses, and Breakup</span>
-        </div>
-        <div class="card-body">
-          <div class="subtabs no-print">
-            <button class="subtab active" data-subtab="advance" onclick="setSubtab('advance')">A. Advance</button>
-            <button class="subtab" data-subtab="expenses" onclick="setSubtab('expenses')">B. Expenses</button>
-            <button class="subtab" data-subtab="breakup" onclick="setSubtab('breakup')">C. Breakup</button>
-          </div>
-
-          <!-- Advance -->
-          <div id="subtab-advance" class="subpage active">
-            <div class="form-row cols-3">
-              <div>
-                <label>Date</label>
-                <input type="date" id="a-date" />
+    <!-- VOUCHER -->
+    <section id="voucher">
+      <div class="panel">
+        <h3>Voucher Form</h3>
+        <form id="voucherForm">
+          <div class="grid">
+            <div class="col-3">
+              <label>Voucher No.</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="text" id="vNo" placeholder="Auto" />
+                <label class="chip" style="cursor:pointer">
+                  <input type="checkbox" id="vAuto" checked /> Auto
+                </label>
               </div>
-              <div>
+            </div>
+            <div class="col-3">
+              <label>Date</label>
+              <input type="date" id="vDate" required />
+            </div>
+            <div class="col-6">
+              <label>Paid To / Ms</label>
+              <input type="text" id="vPaidTo" required placeholder="Name" />
+            </div>
+            <div class="col-6">
+              <label>Purpose (By Cash / Against)</label>
+              <input type="text" id="vPurpose" placeholder="By Cash / Against ..." />
+            </div>
+            <div class="col-3">
+              <label>Amount (Rs)</label>
+              <input type="number" id="vAmount" min="0" step="0.01" required />
+            </div>
+            <div class="col-9">
+              <label>Amount in Words</label>
+              <input type="text" id="vWords" readonly />
+            </div>
+            <div class="col-12 toolbar">
+              <button class="btn icon" type="submit" id="vAddBtn">➕ Add Voucher</button>
+              <button class="btn icon success" type="button" id="vUpdateBtn" disabled>✏️ Update Voucher</button>
+              <button class="btn icon danger" type="button" id="vDeleteBtn" disabled>❌ Delete Voucher</button>
+              <button class="btn icon secondary" type="button" id="vPrintBtn" disabled>🖨️ Print Voucher</button>
+              <button class="btn icon warn" type="button" id="vExportBtn">📤 Export (.xlsx)</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <div class="table-tools">
+            <input class="search" id="voucherSearch" placeholder="Search vouchers..." />
+            <span class="chip">Click a row to select</span>
+          </div>
+          <table id="voucherTable">
+            <thead>
+              <tr>
+                <th data-key="vno">Voucher No</th>
+                <th data-key="date">Date</th>
+                <th data-key="paidto">Paid To</th>
+                <th data-key="purpose">Purpose</th>
+                <th data-key="amount" data-type="number">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPENSES -->
+    <section id="expenses">
+      <div class="panel">
+        <h3>Expenses</h3>
+        <div class="tabs">
+          <div class="tab active" data-exp-tab="advance" onclick="App.showExpensesTab('advance')">Advance</div>
+          <div class="tab" data-exp-tab="expenses" onclick="App.showExpensesTab('expenses')">Expenses</div>
+          <div class="tab" data-exp-tab="breakup" onclick="App.showExpensesTab('breakup')">Breakup</div>
+        </div>
+
+        <!-- Advance Tab -->
+        <div data-exp-content="advance">
+          <form id="advanceForm">
+            <div class="grid">
+              <div class="col-3">
+                <label>Date</label>
+                <input type="date" id="aDate" required />
+              </div>
+              <div class="col-3">
                 <label>Month</label>
-                <input type="text" id="a-month" readonly placeholder="Auto from date" />
+                <input type="text" id="aMonth" readonly />
               </div>
-              <div>
+              <div class="col-3">
                 <label>Amount</label>
-                <input type="number" id="a-amount" min="0" step="1" placeholder="0" />
+                <input type="number" id="aAmount" min="0" step="0.01" required />
               </div>
-            </div>
-            <div class="form-row" style="margin-top:12px">
-              <div>
+              <div class="col-12">
                 <label>Remarks</label>
-                <input type="text" id="a-remarks" placeholder="Remarks (optional)" />
+                <input type="text" id="aRemarks" placeholder="Optional remarks" />
+              </div>
+              <div class="col-12 toolbar">
+                <button class="btn icon" type="submit" id="aAddBtn">➕ Add</button>
+                <button class="btn icon success" type="button" id="aUpdateBtn" disabled>✏️ Update</button>
+                <button class="btn icon danger" type="button" id="aDeleteBtn" disabled>❌ Delete</button>
+                <button class="btn icon secondary" type="button" id="aPrintBtn">🖨️ Print Report</button>
               </div>
             </div>
-            <div class="spacer"></div>
-            <div class="btn-group no-print">
-              <button class="btn success" id="a-add">➕ Add</button>
-              <button class="btn primary" id="a-update" disabled>✏️ Update</button>
-              <button class="btn danger" id="a-delete" disabled>❌ Delete</button>
-              <button class="btn" id="a-print">🖨️ Print Report</button>
-            </div>
-
-            <div class="spacer"></div>
+          </form>
+          <div class="table-wrap">
             <div class="table-tools">
-              <div class="search">🔎 <input id="a-search" placeholder="Search..." /></div>
-              <div class="muted">Click headers to sort</div>
+              <input class="search" id="advanceSearch" placeholder="Search advances..." />
+              <span class="chip">Click a row to select</span>
             </div>
-            <div style="overflow:auto">
-              <table id="a-table">
-                <thead>
-                  <tr>
-                    <th data-key="date">Date <span class="sort">↕</span></th>
-                    <th data-key="month">Month <span class="sort">↕</span></th>
-                    <th data-key="amount" class="right">Amount <span class="sort">↕</span></th>
-                    <th data-key="remarks">Remarks <span class="sort">↕</span></th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-                <tfoot>
-                  <tr><td colspan="2" class="right">Total</td><td id="a-total" class="right">₹0</td><td></td></tr>
-                </tfoot>
-              </table>
-            </div>
+            <table id="advanceTable">
+              <thead>
+              <tr>
+                <th data-key="date">Date</th>
+                <th data-key="month">Month</th>
+                <th data-key="amount" data-type="number">Amount (₹)</th>
+                <th data-key="remarks">Remarks</th>
+              </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
+        </div>
 
-          <!-- Expenses -->
-          <div id="subtab-expenses" class="subpage">
-            <div class="form-row cols-3">
-              <div>
+        <!-- Expenses Tab -->
+        <div data-exp-content="expenses" style="display:none">
+          <form id="expenseForm">
+            <div class="grid">
+              <div class="col-2">
                 <label>Sr. No.</label>
-                <input type="number" id="e-srno" readonly />
+                <input type="text" id="eSr" readonly />
               </div>
-              <div>
+              <div class="col-3">
                 <label>Date</label>
-                <input type="date" id="e-date" />
+                <input type="date" id="eDate" required />
               </div>
-              <div>
+              <div class="col-3">
                 <label>Expense Type</label>
-                <input list="type-list" id="e-type" placeholder="Select or type..." />
-                <datalist id="type-list"></datalist>
+                <select id="eType" required></select>
               </div>
-            </div>
-            <div class="form-row cols-3" style="margin-top:12px">
-              <div>
+              <div class="col-4">
                 <label>Description</label>
-                <input list="desc-list" id="e-desc" placeholder="Pick or type..." />
-                <datalist id="desc-list"></datalist>
+                <input list="descList" id="eDesc" placeholder="Select or type..." />
+                <datalist id="descList"></datalist>
               </div>
-              <div>
+              <div class="col-3">
                 <label>Amount</label>
-                <input type="number" id="e-amount" min="0" step="1" placeholder="0" />
+                <input type="number" id="eAmount" min="0" step="0.01" required />
               </div>
-              <div>
+              <div class="col-3">
                 <label>Bill No.</label>
-                <input type="text" id="e-bill" placeholder="Bill / Ref No." />
+                <input type="text" id="eBillNo" placeholder="Bill/Ref no." />
               </div>
-            </div>
-            <div class="form-row" style="margin-top:12px">
-              <div>
+              <div class="col-6">
                 <label>Remarks</label>
-                <input type="text" id="e-remarks" placeholder="Remarks (optional)" />
+                <input type="text" id="eRemarks" placeholder="Optional" />
+              </div>
+              <div class="col-12 toolbar">
+                <button class="btn icon" type="submit" id="eAddBtn">➕ Add</button>
+                <button class="btn icon success" type="button" id="eUpdateBtn" disabled>✏️ Update</button>
+                <button class="btn icon danger" type="button" id="eDeleteBtn" disabled>❌ Delete</button>
+                <button class="btn icon secondary" type="button" id="ePrintBtn">🖨️ Print Report</button>
               </div>
             </div>
-            <div class="spacer"></div>
-            <div class="btn-group no-print">
-              <button class="btn success" id="e-add">➕ Add</button>
-              <button class="btn primary" id="e-update" disabled>✏️ Update</button>
-              <button class="btn danger" id="e-delete" disabled>❌ Delete</button>
-              <button class="btn" id="e-print">🖨️ Print Report</button>
-            </div>
-
-            <div class="spacer"></div>
+          </form>
+          <div class="table-wrap">
             <div class="table-tools">
-              <div class="search">🔎 <input id="e-search" placeholder="Search..." /></div>
-              <div class="muted">Click headers to sort</div>
+              <input class="search" id="expenseSearch" placeholder="Search expenses..." />
+              <span class="chip">Click a row to select</span>
             </div>
-            <div style="overflow:auto">
-              <table id="e-table">
-                <thead>
-                  <tr>
-                    <th data-key="srno">Sr. No <span class="sort">↕</span></th>
-                    <th data-key="date">Date <span class="sort">↕</span></th>
-                    <th data-key="type">Type <span class="sort">↕</span></th>
-                    <th data-key="description">Description <span class="sort">↕</span></th>
-                    <th data-key="amount" class="right">Amount <span class="sort">↕</span></th>
-                    <th data-key="billno">Bill No. <span class="sort">↕</span></th>
-                    <th data-key="remarks">Remarks <span class="sort">↕</span></th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-                <tfoot>
-                  <tr><td colspan="4" class="right">Total</td><td id="e-total" class="right">₹0</td><td colspan="2"></td></tr>
-                </tfoot>
-              </table>
-            </div>
+            <table id="expenseTable">
+              <thead>
+              <tr>
+                <th data-key="sr" data-type="number">Sr</th>
+                <th data-key="date">Date</th>
+                <th data-key="type">Type</th>
+                <th data-key="desc">Description</th>
+                <th data-key="amount" data-type="number">Amount (₹)</th>
+                <th data-key="billno">Bill No.</th>
+                <th data-key="remarks">Remarks</th>
+              </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
+        </div>
 
-          <!-- Breakup -->
-          <div id="subtab-breakup" class="subpage">
-            <div class="form-row cols-3">
-              <div>
-                <label>Expense Type (select or type new)</label>
-                <input list="type-list" id="b-type" placeholder="Type e.g. Travel" />
+        <!-- Breakup Tab -->
+        <div data-exp-content="breakup" style="display:none">
+          <form id="breakupForm">
+            <div class="grid">
+              <div class="col-4">
+                <label>Expense Type (new or select)</label>
+                <input list="typeList" id="bType" placeholder="e.g., Travel, Food..." />
+                <datalist id="typeList"></datalist>
               </div>
-              <div>
+              <div class="col-6">
                 <label>Description</label>
-                <input type="text" id="b-desc" placeholder="e.g. Taxi, Stationery..." />
+                <input type="text" id="bDesc" placeholder="e.g., Taxi, Lunch, Parking..." />
+              </div>
+              <div class="col-12 toolbar">
+                <button class="btn icon" type="submit" id="bAddBtn">➕ Add</button>
+                <button class="btn icon success" type="button" id="bUpdateBtn" disabled>✏️ Update</button>
+                <button class="btn icon danger" type="button" id="bDeleteBtn" disabled>❌ Delete</button>
               </div>
             </div>
-            <div class="spacer"></div>
-            <div class="btn-group no-print">
-              <button class="btn success" id="b-add">➕ Add</button>
-              <button class="btn primary" id="b-update" disabled>✏️ Update</button>
-              <button class="btn danger" id="b-delete" disabled>❌ Delete</button>
-            </div>
-
-            <div class="spacer"></div>
+          </form>
+          <div class="table-wrap">
             <div class="table-tools">
-              <div class="search">🔎 <input id="b-search" placeholder="Search..." /></div>
-              <div class="muted">Click headers to sort</div>
+              <input class="search" id="breakupSearch" placeholder="Search breakup items..." />
+              <span class="chip">Click a row to select</span>
             </div>
-            <div style="overflow:auto">
-              <table id="b-table">
-                <thead>
-                  <tr>
-                    <th data-key="type">Type <span class="sort">↕</span></th>
-                    <th data-key="description">Description <span class="sort">↕</span></th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-
+            <table id="breakupTable">
+              <thead>
+              <tr>
+                <th data-key="type">Type</th>
+                <th data-key="desc">Description</th>
+              </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
+
       </div>
     </section>
 
-    <!-- About -->
-    <section id="page-about" class="page">
-      <div class="grid">
-        <div class="card">
-          <div class="card-header">About</div>
-          <div class="card-body">
-            <p style="color:#cbd5e1">
-              This is a lightweight, responsive web app to manage Vouchers, Advances, and Expenses — no backend required.
-              Data is stored in-browser, with export to Excel/CSV and print-friendly reports.
-            </p>
-            <div class="grid cols-3">
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Application</div>
-                  <div style="font-weight:800; font-size:1.1rem; margin-top:6px">Voucher & Expenses Manager</div>
-                </div>
-              </div>
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Developer</div>
-                  <div style="font-weight:800; font-size:1.1rem; margin-top:6px">Your Company</div>
-                </div>
-              </div>
-              <div class="card">
-                <div class="card-body">
-                  <div class="muted">Version</div>
-                  <div style="font-weight:800; font-size:1.1rem; margin-top:6px">v1.0.0</div>
-                </div>
-              </div>
+    <!-- ADMIN -->
+    <section id="admin">
+      <div class="panel">
+        <h3>Admin Panel</h3>
+        <p class="hint">Manage application users. Only Admins can access this page.</p>
+        <form id="userForm">
+          <div class="grid">
+            <div class="col-3">
+              <label>Username</label>
+              <input type="text" id="uUsername" required />
             </div>
-            <div class="pill" style="margin-top:10px">Built with HTML, CSS (flex/grid), Vanilla JS, Chart.js, SheetJS</div>
+            <div class="col-3">
+              <label>Password</label>
+              <input type="password" id="uPassword" required />
+            </div>
+            <div class="col-3">
+              <label>Confirm Password</label>
+              <input type="password" id="uConfirm" required />
+            </div>
+            <div class="col-3">
+              <label>Role</label>
+              <select id="uRole">
+                <option>Admin</option>
+                <option>User</option>
+              </select>
+            </div>
+            <div class="col-12 toolbar">
+              <button class="btn icon" type="submit" id="uSaveBtn">💾 Save</button>
+              <button class="btn icon success" type="button" id="uUpdateBtn" disabled>✏️ Update</button>
+              <button class="btn icon danger" type="button" id="uDeleteBtn" disabled>❌ Delete</button>
+            </div>
           </div>
+        </form>
+
+        <div class="table-wrap">
+          <div class="table-tools">
+            <input class="search" id="userSearch" placeholder="Search users..." />
+            <span class="chip">Click a row to select</span>
+          </div>
+          <table id="userTable">
+            <thead>
+            <tr>
+              <th data-key="username">Username</th>
+              <th data-key="role">Role</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
+
       </div>
     </section>
+
+    <!-- ABOUT -->
+    <section id="about">
+      <div class="panel">
+        <h3>About</h3>
+        <p>
+          This lightweight web app helps track vouchers, advances, and expenses without a backend.
+          It uses modern CSS, vanilla JavaScript, and popular client-side libraries for charts and export.
+        </p>
+        <ul>
+          <li>Version: 1.0.1</li>
+          <li>Tech: Vanilla JS, Chart.js, SheetJS</li>
+          <li>Tables: Custom search & sort, print-friendly</li>
+        </ul>
+        <p class="hint">Authentication is client-side only; do not rely on it for production security.</p>
+      </div>
+    </section>
+
+    <!-- PRINT AREA -->
+    <div id="print-area"></div>
+
   </main>
 
-  <div id="toast" class="toast" style="display:none"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-  // ------------------------------ Data Store ------------------------------
-  const STORAGE_KEY = 'voucher-expenses-db-v1';
-
-  const DB = {
-    vouchers: [],      // {id, voucherNo, date, paidTo, purpose, amount, amountWords}
-    advances: [],      // {id, date, month, amount, remarks}
-    expenses: [],      // {id, srno, date, type, description, amount, billno, remarks}
-    breakups: [],      // {id, type, description}
-    counters: { voucher: 1, expenseSr: 1, ids: 1 }
-  };
-
-  function loadDB(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw){
-        const parsed = JSON.parse(raw);
-        Object.assign(DB, parsed);
-      } else {
-        // seed some breakup options
-        DB.breakups = [
-          {id: DB.counters.ids++, type:'Travel', description:'Taxi'},
-          {id: DB.counters.ids++, type:'Travel', description:'Train'},
-          {id: DB.counters.ids++, type:'Food', description:'Breakfast'},
-          {id: DB.counters.ids++, type:'Food', description:'Lunch'},
-          {id: DB.counters.ids++, type:'Office Supplies', description:'Stationery'},
-          {id: DB.counters.ids++, type:'Utilities', description:'Electricity'},
-          {id: DB.counters.ids++, type:'Rent', description:'Office Rent'},
-        ];
-      }
-    }catch(e){ console.error('Failed to load DB', e); }
-  }
-  function saveDB(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){} }
-
-  // ------------------------------ Router ------------------------------
-  const Router = {
-    current: 'home',
-    go(route){
-      const hash = '#' + route;
-      history.pushState(null, '', hash);
-      Router.render(route);
-    },
-    render(route){
-      Router.current = route;
-      document.querySelectorAll('.nav a').forEach(a=>{
-        a.classList.toggle('active', a.dataset.route === route);
-      });
-      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-      document.getElementById('page-' + route).classList.add('active');
-      if(route==='home') renderDashboard();
-      if(route==='voucher') {
-        ensureVoucherNo();
-        renderVouchersTable();
-      }
-      if(route==='expenses'){
-        renderBreakupDatalists();
-        renderAdvancesTable();
-        renderExpensesTable();
-        renderBreakupTable();
-      }
-    }
-  };
-  window.addEventListener('popstate', ()=>{
-    const route = location.hash.replace('#','') || 'home';
-    Router.render(route);
-  });
-
-  // ------------------------------ Helpers ------------------------------
-  const fmt = {
-    currency(n){ try{ return n.toLocaleString('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }); } catch{ return '₹'+Number(n||0).toFixed(0); } },
-    dateISO(d){ return d ? new Date(d).toISOString().slice(0,10) : ''; },
-    dateDisplay(d){
-      if(!d) return '';
-      const dt = new Date(d+'T00:00:00');
-      return dt.toLocaleDateString('en-GB',{ day:'2-digit', month:'short', year:'numeric' });
-    },
-    monthFromDate(d){
-      if(!d) return '';
-      const dt = new Date(d+'T00:00:00');
-      return dt.toLocaleString('en-GB',{ month:'long', year:'numeric' });
-    }
-  };
-
-  function showToast(msg, timeout=2200){
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.style.display = 'block';
-    setTimeout(()=>{ t.style.display='none'; }, timeout);
-  }
-
-  // Indian number to words (Rupees)
-  function numberToWordsIndian(num){
-    num = Math.floor(Number(num)||0);
-    if(num === 0) return 'Zero Rupees only';
-    const ones = ['', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-    const tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-    const two = (n)=> n<20 ? ones[n] : (tens[Math.floor(n/10)] + (n%10? ' ' + ones[n%10] : ''));
-    const three = (n)=> {
-      let s=''; if(n>=100){ s += ones[Math.floor(n/100)] + ' Hundred'; n = n%100; if(n) s+=' '; }
-      if(n) s += two(n); return s;
-    };
-    let s='';
-    const crore = Math.floor(num/10000000); num%=10000000;
-    const lakh = Math.floor(num/100000); num%=100000;
-    const thousand = Math.floor(num/1000); num%=1000;
-    const hundred = num;
-    if(crore) s += three(crore) + ' Crore ';
-    if(lakh) s += three(lakh) + ' Lakh ';
-    if(thousand) s += three(thousand) + ' Thousand ';
-    if(hundred) s += three(hundred);
-    return s.trim() + ' Rupees only';
-  }
-
-  function nextId(){ return DB.counters.ids++; }
-  function nextVoucherNo(){ return 'V-' + String(DB.counters.voucher++).padStart(4,'0'); }
-  function nextExpenseSr(){ return DB.counters.expenseSr++; }
-
-  // ------------------------------ Voucher ------------------------------
-  let voucherSort = { key:'date', dir:'desc' };
-  let voucherSearch = '';
-  let selectedVoucherId = null;
-  const vEls = {
-    voucherNo: ()=>document.getElementById('v-voucherNo'),
-    date: ()=>document.getElementById('v-date'),
-    paidTo: ()=>document.getElementById('v-paidTo'),
-    purpose: ()=>document.getElementById('v-purpose'),
-    amount: ()=>document.getElementById('v-amount'),
-    amountWords: ()=>document.getElementById('v-amountWords'),
-    table: ()=>document.getElementById('v-table').querySelector('tbody'),
-    total: ()=>document.getElementById('v-total'),
-    search: ()=>document.getElementById('v-search'),
-    btnAdd: ()=>document.getElementById('v-add'),
-    btnUpdate: ()=>document.getElementById('v-update'),
-    btnDelete: ()=>document.getElementById('v-delete'),
-    btnPrint: ()=>document.getElementById('v-print'),
-    exportBtn: ()=>document.getElementById('v-export')
-  };
-
-  function ensureVoucherNo(){
-    if(!vEls.voucherNo().value){
-      vEls.voucherNo().value = nextVoucherNo();
-    }
-  }
-
-  function readVoucherForm(){
-    const amount = Number(vEls.amount().value||0);
-    return {
-      voucherNo: vEls.voucherNo().value.trim() || nextVoucherNo(),
-      date: vEls.date().value || fmt.dateISO(new Date()),
-      paidTo: vEls.paidTo().value.trim(),
-      purpose: vEls.purpose().value.trim(),
-      amount: amount
-    };
-  }
-
-  function setVoucherForm(data){
-    vEls.voucherNo().value = data.voucherNo || '';
-    vEls.date().value = data.date || '';
-    vEls.paidTo().value = data.paidTo || '';
-    vEls.purpose().value = data.purpose || '';
-    vEls.amount().value = data.amount ?? '';
-    vEls.amountWords().value = numberToWordsIndian(data.amount||0);
-  }
-
-  function clearVoucherForm(){
-    setVoucherForm({ voucherNo: nextVoucherNo(), date: fmt.dateISO(new Date()), paidTo:'', purpose:'', amount:'' });
-    selectedVoucherId = null;
-    vEls.btnUpdate().disabled = true;
-    vEls.btnDelete().disabled = true;
-  }
-
-  function addVoucher(){
-    const f = readVoucherForm();
-    if(!f.paidTo || !f.purpose || !(f.amount>0)){
-      showToast('Please fill Paid To, Purpose, and a valid Amount.');
-      return;
-    }
-    const rec = { id: nextId(), ...f, amountWords:numberToWordsIndian(f.amount) };
-    DB.vouchers.push(rec);
-    saveDB();
-    renderVouchersTable();
-    renderDashboard();
-    showToast('Voucher added.');
-    clearVoucherForm();
-  }
-
-  function updateVoucher(){
-    if(!selectedVoucherId){ showToast('Select a voucher row to update.'); return; }
-    const f = readVoucherForm();
-    const idx = DB.vouchers.findIndex(v=>v.id===selectedVoucherId);
-    if(idx>=0){
-      DB.vouchers[idx] = { ...DB.vouchers[idx], ...f, amountWords:numberToWordsIndian(f.amount) };
-      saveDB();
-      renderVouchersTable();
-      renderDashboard();
-      showToast('Voucher updated.');
-    }
-  }
-
-  function deleteVoucher(){
-    if(!selectedVoucherId){ showToast('Select a voucher row to delete.'); return; }
-    if(!confirm('Delete selected voucher?')) return;
-    DB.vouchers = DB.vouchers.filter(v=>v.id!==selectedVoucherId);
-    saveDB();
-    renderVouchersTable();
-    renderDashboard();
-    showToast('Voucher deleted.');
-    clearVoucherForm();
-  }
-
-  function renderVouchersTable(){
-    const tbody = vEls.table();
-    let rows = DB.vouchers.slice();
-
-    // search
-    const q = voucherSearch.trim().toLowerCase();
-    if(q){
-      rows = rows.filter(r => Object.values(r).some(val => (''+val).toLowerCase().includes(q)));
-    }
-    // sort
-    rows.sort((a,b)=>{
-      const k = voucherSort.key;
-      let va = a[k], vb = b[k];
-      if(k==='amount'){ va = Number(va||0); vb = Number(vb||0); }
-      if(k==='date'){ va = va || ''; vb = vb || ''; }
-      if(va<vb) return voucherSort.dir==='asc'?-1:1;
-      if(va>vb) return voucherSort.dir==='asc'?1:-1;
-      return 0;
-    });
-
-    tbody.innerHTML = rows.map(r=>`
-      <tr data-id="${r.id}">
-        <td>${escapeHtml(r.voucherNo||'')}</td>
-        <td>${fmt.dateDisplay(r.date)}</td>
-        <td>${escapeHtml(r.paidTo||'')}</td>
-        <td>${escapeHtml(r.purpose||'')}</td>
-        <td class="right">${fmt.currency(r.amount||0)}</td>
-      </tr>
-    `).join('');
-
-    // selection
-    tbody.querySelectorAll('tr').forEach(tr=>{
-      tr.addEventListener('click', ()=>{
-        tbody.querySelectorAll('tr').forEach(x=>x.classList.remove('selected'));
-        tr.classList.add('selected');
-        selectedVoucherId = Number(tr.getAttribute('data-id'));
-        const rec = DB.vouchers.find(x=>x.id===selectedVoucherId);
-        setVoucherForm(rec);
-        vEls.btnUpdate().disabled = false;
-        vEls.btnDelete().disabled = false;
-      });
-    });
-
-    // total
-    const tot = rows.reduce((s,r)=>s+Number(r.amount||0),0);
-    vEls.total().textContent = fmt.currency(tot);
-
-    // bind header sort
-    document.querySelectorAll('#v-table thead th').forEach(th=>{
-      th.onclick = ()=>{
-        const k = th.getAttribute('data-key');
-        if(k){
-          if(voucherSort.key===k) voucherSort.dir = voucherSort.dir==='asc'?'desc':'asc';
-          else { voucherSort.key = k; voucherSort.dir='asc'; }
-          renderVouchersTable();
-        }
+    const App = (() => {
+      // --- State ---
+      const LS_KEY = 'expenseAppData.clean.v1';
+      const SS_USER = 'expenseAppUser.clean.v1';
+      const state = {
+        vouchers: [],
+        advances: [],
+        expenses: [],
+        breakup: { map: {} }, // type -> [descriptions]
+        users: [],
+        srCounter: 1,
+        currentUser: null
       };
-    });
 
-    // amount words live
-    vEls.amount().oninput = ()=>{
-      const amt = Number(vEls.amount().value||0);
-      vEls.amountWords().value = numberToWordsIndian(amt);
-    };
-  }
+      // --- Utils ---
+      const fmtMoney = (n) => '₹' + (Number(n||0)).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      const toISO = (d) => d ? new Date(d).toISOString().slice(0,10) : '';
+      const uid = () => (crypto?.randomUUID?.() || ('id-' + Date.now() + '-' + Math.random().toString(16).slice(2)));
+      const monthFromDate = (dateStr) => {
+        if(!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleString('en-IN', {month:'long', year:'numeric'});
+      };
+      const todayISO = () => toISO(new Date());
 
-  function printVoucher(){
-    // Use selected or current form
-    let rec = null;
-    if(selectedVoucherId) rec = DB.vouchers.find(v=>v.id===selectedVoucherId);
-    if(!rec){
-      const f = readVoucherForm();
-      if(!(f.amount>0) || !f.paidTo) { showToast('Select a voucher or fill form to print.'); return; }
-      rec = { ...f, amountWords:numberToWordsIndian(f.amount) };
-    }
-    const html = `
-      <html><head>
-        <title>Voucher ${escapeHtml(rec.voucherNo||'')}</title>
-        <style>
-          body{font-family:Inter,Arial; padding:24px; color:#111}
-          .voucher{max-width:780px; margin:0 auto; border:1px solid #999; padding:20px; border-radius:10px}
-          h2{margin:0 0 12px 0}
-          .row{display:flex; justify-content:space-between; gap:10px; margin:6px 0}
-          .label{color:#666; min-width:140px}
-          .val{font-weight:700}
-          .hr{height:1px; background:#ccc; margin:14px 0}
-          .signs{display:flex; justify-content:space-between; margin-top:40px}
-          .sign{border-top:1px solid #999; padding-top:6px; width:180px; text-align:center}
-          .muted{color:#666}
-          .big{font-size:1.1rem}
-        </style>
-      </head><body onload="window.print()">
-        <div class="voucher">
-          <h2>Payment Voucher</h2>
-          <div class="row"><div class="label">Voucher No.</div><div class="val">${escapeHtml(rec.voucherNo||'')}</div></div>
-          <div class="row"><div class="label">Date</div><div class="val">${fmt.dateDisplay(rec.date)}</div></div>
-          <div class="row"><div class="label">Paid To / Ms</div><div class="val">${escapeHtml(rec.paidTo||'')}</div></div>
-          <div class="row"><div class="label">Purpose</div><div class="val">${escapeHtml(rec.purpose||'')}</div></div>
-          <div class="hr"></div>
-          <div class="row big"><div class="label">Amount</div><div class="val">${fmt.currency(rec.amount||0)}</div></div>
-          <div class="row"><div class="label">Amount in Words</div><div class="val">${escapeHtml(rec.amountWords||'')}</div></div>
-          <div class="signs">
-            <div class="sign">Prepared By</div>
-            <div class="sign">Verified By</div>
-            <div class="sign">Authorized Signatory</div>
+      // Indian Number to Words (Rupees)
+      function numberToWordsIndian(n){
+        n = Number(n);
+        if(isNaN(n)) return '';
+        if(n === 0) return 'Zero Rupees Only';
+        const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+        const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+        function twoDigits(num){
+          if(num < 20) return ones[num];
+          const t = Math.floor(num/10);
+          const r = num%10;
+          return tens[t] + (r? ' ' + ones[r] : '');
+        }
+        function threeDigits(num){
+          const h = Math.floor(num/100);
+          const rest = num % 100;
+          const hPart = h ? ones[h] + ' Hundred' + (rest ? ' ' : '') : '';
+          return hPart + twoDigits(rest);
+        }
+        let str = '';
+        const rupees = Math.floor(n);
+        const paise = Math.round((n - rupees)*100);
+
+        // Split rupees into Indian groups: crore, lakh, thousand, hundred
+        const crore = Math.floor(rupees/10000000);
+        const lakh  = Math.floor((rupees/100000)%100);
+        const thou  = Math.floor((rupees/1000)%100);
+        const hund  = rupees % 1000;
+
+        if(crore) str += threeDigits(crore) + ' Crore ';
+        if(lakh) str += threeDigits(lakh) + ' Lakh ';
+        if(thou) str += threeDigits(thou) + ' Thousand ';
+        if(hund) str += threeDigits(hund);
+
+        str = str.trim() + ' Rupees';
+        if(paise) str += ' and ' + twoDigits(paise) + ' Paise';
+        return str + ' Only';
+      }
+
+      function save(){
+        const data = {
+          vouchers: state.vouchers,
+          advances: state.advances,
+          expenses: state.expenses,
+          breakup: state.breakup,
+          users: state.users,
+          srCounter: state.srCounter
+        };
+        localStorage.setItem(LS_KEY, JSON.stringify(data));
+      }
+      function load(){
+        // Clear any old demo keys if present
+        try {
+          localStorage.removeItem('expenseAppData.v1');
+          sessionStorage.removeItem('expenseAppUser.v1');
+        } catch(e){}
+
+        const initial = {
+          users: [
+            {id: uid(), username: 'Abhay', password: 'Abhay@123', role: 'Admin'}
+          ],
+          vouchers: [],
+          advances: [],
+          expenses: [],
+          breakup: { map: {} },
+          srCounter: 1
+        };
+
+        let data;
+        try{ data = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); }catch(e){}
+        data = data || initial;
+
+        state.vouchers = data.vouchers || [];
+        state.advances = data.advances || [];
+        state.expenses = data.expenses || [];
+        state.breakup = data.breakup || {map:{}};
+        state.users = data.users && data.users.length ? data.users : initial.users;
+        state.srCounter = data.srCounter || 1;
+
+        const savedUser = sessionStorage.getItem(SS_USER);
+        if(savedUser){ state.currentUser = JSON.parse(savedUser); }
+      }
+
+      // --- Navigation ---
+      function navigate(id){
+        document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('.nav-links a').forEach(a => a.classList.toggle('active', a.dataset.nav === id));
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+
+      // --- Dashboard & Chart ---
+      let chart;
+      function updateDashboard(){
+        const vCount = state.vouchers.length;
+        const vTotal = state.vouchers.reduce((s,v)=>s+Number(v.amount||0),0);
+        const aTotal = state.advances.reduce((s,a)=>s+Number(a.amount||0),0);
+        const eTotal = state.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+        const balance = aTotal - eTotal;
+
+        document.getElementById('totalVoucherCount').textContent = vCount;
+        document.getElementById('totalVoucherAmount').textContent = fmtMoney(vTotal);
+        document.getElementById('totalAdvanceAmount').textContent = fmtMoney(aTotal);
+        document.getElementById('totalExpensesAmount').textContent = fmtMoney(eTotal);
+        document.getElementById('totalBalance').textContent = fmtMoney(balance);
+
+        const data = [Math.max(vTotal,0), Math.max(aTotal,0), Math.max(eTotal,0), Math.max(balance,0)];
+        const ctx = document.getElementById('summaryChart').getContext('2d');
+        if(!chart){
+          chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Vouchers','Advance','Expenses','Balance'],
+              datasets: [{ data, backgroundColor: ['#818cf8','#10b981','#f59e0b','#22d3ee']}]
+            },
+            options: { plugins:{legend:{labels:{color:'#e5e7eb'}}}, maintainAspectRatio:false }
+          });
+        }else{
+          chart.data.datasets[0].data = data;
+          chart.update();
+        }
+      }
+
+      // --- Helpers: tables (search/sort/select) ---
+      function attachTableInteractions({tableId, searchId, onRowClick}){
+        const table = document.getElementById(tableId);
+        const tbody = table.querySelector('tbody');
+        const search = document.getElementById(searchId);
+        let sortKey = null, sortDir = 1;
+
+        function filterRows(){
+          const q = (search?.value || '').trim().toLowerCase();
+          [...tbody.rows].forEach(tr => {
+            const text = tr.textContent.toLowerCase();
+            tr.style.display = text.includes(q)? '' : 'none';
+          });
+        }
+        function sortBy(th){
+          const idx = [...th.parentElement.children].indexOf(th);
+          const type = th.dataset.type || 'string';
+          sortDir = (sortKey === idx) ? -sortDir : 1;
+          sortKey = idx;
+          const rows = [...tbody.rows].filter(r => r.style.display !== 'none');
+          rows.sort((a,b)=>{
+            let x = a.cells[idx].dataset.sort ?? a.cells[idx].textContent.trim();
+            let y = b.cells[idx].dataset.sort ?? b.cells[idx].textContent.trim();
+            if(type==='number'){ x = Number(x.replace(/[^\d.-]/g,'')); y = Number(y.replace(/[^\d.-]/g,'')); }
+            return x>y? sortDir : x<y? -sortDir : 0;
+          });
+          rows.forEach(r => tbody.appendChild(r));
+          // Indicate sort
+          table.querySelectorAll('thead th').forEach(h => h.textContent=h.textContent.replace(/[▲▼]/g,'')); 
+          th.textContent = th.textContent + (sortDir===1? ' ▲':' ▼');
+        }
+        search?.addEventListener('input', filterRows);
+        table.querySelectorAll('thead th').forEach(th => th.addEventListener('click', () => sortBy(th)));
+        tbody.addEventListener('click', (e)=>{
+          const tr = e.target.closest('tr'); if(!tr) return;
+          [...tbody.rows].forEach(r => r.classList.remove('selected'));
+          tr.classList.add('selected');
+          onRowClick?.(tr.dataset.id);
+        });
+        return { filter: filterRows, clearSelection: ()=>{[...tbody.rows].forEach(r=>r.classList.remove('selected'))} };
+      }
+
+      // --- Vouchers ---
+      let voucherSelection = null;
+      function renderVoucherTable(){
+        const tbody = document.querySelector('#voucherTable tbody');
+        tbody.innerHTML = state.vouchers.map(v => `
+          <tr data-id="${v.id}">
+            <td>${v.vno}</td>
+            <td data-sort="${v.date}">${v.date}</td>
+            <td>${escapeHTML(v.paidTo)}</td>
+            <td>${escapeHTML(v.purpose || '')}</td>
+            <td data-sort="${v.amount}">${fmtMoney(v.amount)}</td>
+          </tr>
+        `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--muted)">No vouchers yet.</td></tr>`;
+        voucherTableCtl?.filter?.();
+      }
+      function fillVoucherForm(v){
+        document.getElementById('vNo').value = v.vno || '';
+        document.getElementById('vDate').value = v.date || todayISO();
+        document.getElementById('vPaidTo').value = v.paidTo || '';
+        document.getElementById('vPurpose').value = v.purpose || '';
+        document.getElementById('vAmount').value = v.amount || '';
+        document.getElementById('vWords').value = v.amount ? numberToWordsIndian(v.amount) : '';
+      }
+      function resetVoucherForm(){
+        voucherSelection = null;
+        document.getElementById('voucherForm').reset();
+        document.getElementById('vDate').value = todayISO();
+        document.getElementById('vWords').value='';
+        document.getElementById('vUpdateBtn').disabled = true;
+        document.getElementById('vDeleteBtn').disabled = true;
+        document.getElementById('vPrintBtn').disabled = true;
+        document.getElementById('vAddBtn').disabled = false;
+        document.getElementById('vAuto').checked = true;
+        document.getElementById('vNo').disabled = true;
+        document.getElementById('vNo').placeholder = 'Auto';
+        autoFillVoucherNo();
+        voucherTableCtl?.clearSelection?.();
+      }
+      function autoFillVoucherNo(){
+        if(!document.getElementById('vAuto').checked) return;
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth()+1).padStart(2,'0');
+        const d = String(today.getDate()).padStart(2,'0');
+        const prefix = `V-${y}${m}${d}-`;
+        const todays = state.vouchers.filter(v => v.vno && v.vno.startsWith(prefix));
+        const next = String(todays.length + 1).padStart(3,'0');
+        document.getElementById('vNo').value = prefix + next;
+      }
+      function printVoucher(v){
+        const el = document.getElementById('print-area');
+        el.innerHTML = `
+          <div class="voucher-print">
+            <h2>Payment Voucher</h2>
+            <div class="voucher-grid">
+              <div><strong>Voucher No:</strong> ${v.vno}</div>
+              <div><strong>Date:</strong> ${v.date}</div>
+              <div><strong>Paid To / Ms:</strong> ${escapeHTML(v.paidTo)}</div>
+              <div><strong>Purpose:</strong> ${escapeHTML(v.purpose || '')}</div>
+              <div><strong>Amount:</strong> ${fmtMoney(v.amount)}</div>
+              <div><strong>Amount in Words:</strong> ${numberToWordsIndian(v.amount)}</div>
+            </div>
+            <div style="margin-top:24px;display:flex;justify-content:space-between">
+              <div>Prepared By: ____________</div>
+              <div>Approved By: ____________</div>
+              <div>Received By: ____________</div>
+            </div>
           </div>
-          <div class="muted" style="margin-top:16px">Generated by Voucher & Expenses Manager</div>
-        </div>
-      </body></html>`;
-    const w = window.open('', '_blank');
-    w.document.write(html); w.document.close();
-  }
+        `;
+        setTimeout(()=>window.print(), 50);
+      }
+      function exportVouchers(){
+        const rows = state.vouchers.map(v => ({
+          'Voucher No': v.vno,
+          'Date': v.date,
+          'Paid To': v.paidTo,
+          'Purpose': v.purpose || '',
+          'Amount': Number(v.amount || 0),
+          'Amount in Words': numberToWordsIndian(v.amount)
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
+        XLSX.writeFile(wb, 'vouchers.xlsx');
+      }
 
-  function exportVouchersXLSX(){
-    const data = DB.vouchers.map(v=>({
-      'Voucher No': v.voucherNo,
-      'Date': v.date,
-      'Paid To': v.paidTo,
-      'Purpose': v.purpose,
-      'Amount': v.amount,
-      'Amount in Words': v.amountWords
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
-    XLSX.writeFile(wb, 'vouchers.xlsx');
-  }
+      // --- Advances ---
+      let advanceSelection = null;
+      function renderAdvanceTable(){
+        const tbody = document.querySelector('#advanceTable tbody');
+        tbody.innerHTML = state.advances.map(a => `
+          <tr data-id="${a.id}">
+            <td data-sort="${a.date}">${a.date}</td>
+            <td>${escapeHTML(a.month)}</td>
+            <td data-sort="${a.amount}">${fmtMoney(a.amount)}</td>
+            <td>${escapeHTML(a.remarks || '')}</td>
+          </tr>
+        `).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--muted)">No advances yet.</td></tr>`;
+        advanceTableCtl?.filter?.();
+      }
+      function resetAdvanceForm(){
+        advanceSelection = null;
+        document.getElementById('advanceForm').reset();
+        document.getElementById('aDate').value = todayISO();
+        document.getElementById('aMonth').value = monthFromDate(todayISO());
+        document.getElementById('aUpdateBtn').disabled = true;
+        document.getElementById('aDeleteBtn').disabled = true;
+        document.getElementById('aAddBtn').disabled = false;
+        advanceTableCtl?.clearSelection?.();
+      }
+      function printAdvanceReport(){
+        const el = document.getElementById('print-area');
+        const rows = state.advances.map(a=>`<tr><td>${a.date}</td><td>${a.month}</td><td>${fmtMoney(a.amount)}</td><td>${escapeHTML(a.remarks||'')}</td></tr>`).join('');
+        el.innerHTML = `
+          <div style="max-width:900px;margin:0 auto">
+            <h2>Advance Report</h2>
+            <table border="1" cellspacing="0" cellpadding="6" style="width:100%;border-collapse:collapse">
+              <thead><tr><th>Date</th><th>Month</th><th>Amount</th><th>Remarks</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+        setTimeout(()=>window.print(), 30);
+      }
 
-  function exportVouchersCSV(){
-    const data = DB.vouchers.map(v=>({
-      voucher_no: v.voucherNo, date:v.date, paid_to:v.paidTo, purpose:v.purpose, amount:v.amount, amount_in_words:v.amountWords
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const csv = XLSX.utils.sheet_to_csv(ws);
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'vouchers.csv'; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // ------------------------------ Advances ------------------------------
-  let advSort = { key:'date', dir:'desc' };
-  let advSearch = '';
-  let selectedAdvanceId = null;
-
-  const aEls = {
-    date: ()=>document.getElementById('a-date'),
-    month: ()=>document.getElementById('a-month'),
-    amount: ()=>document.getElementById('a-amount'),
-    remarks: ()=>document.getElementById('a-remarks'),
-    table: ()=>document.querySelector('#a-table tbody'),
-    total: ()=>document.getElementById('a-total'),
-    btnUpdate: ()=>document.getElementById('a-update'),
-    btnDelete: ()=>document.getElementById('a-delete')
-  };
-
-  function readAdvanceForm(){
-    const date = aEls.date().value || fmt.dateISO(new Date());
-    return {
-      date,
-      month: fmt.monthFromDate(date),
-      amount: Number(aEls.amount().value||0),
-      remarks: aEls.remarks().value.trim()
-    };
-  }
-  function setAdvanceForm(d){
-    aEls.date().value = d.date || '';
-    aEls.month().value = d.month || '';
-    aEls.amount().value = d.amount ?? '';
-    aEls.remarks().value = d.remarks || '';
-  }
-  function clearAdvanceForm(){
-    setAdvanceForm({ date: fmt.dateISO(new Date()), month:'', amount:'', remarks:'' });
-    selectedAdvanceId=null; aEls.btnUpdate().disabled = true; aEls.btnDelete().disabled = true;
-  }
-  function addAdvance(){
-    const f = readAdvanceForm();
-    if(!(f.amount>0)){ showToast('Enter a valid advance amount.'); return; }
-    const rec = { id: nextId(), ...f };
-    DB.advances.push(rec); saveDB();
-    renderAdvancesTable(); renderDashboard();
-    showToast('Advance added.'); clearAdvanceForm();
-  }
-  function updateAdvance(){
-    if(!selectedAdvanceId) { showToast('Select an advance row.'); return; }
-    const f = readAdvanceForm();
-    const idx = DB.advances.findIndex(x=>x.id===selectedAdvanceId);
-    if(idx>=0){
-      DB.advances[idx] = { ...DB.advances[idx], ...f };
-      saveDB(); renderAdvancesTable(); renderDashboard(); showToast('Advance updated.');
-    }
-  }
-  function deleteAdvance(){
-    if(!selectedAdvanceId){ showToast('Select an advance row.'); return; }
-    if(!confirm('Delete selected advance?')) return;
-    DB.advances = DB.advances.filter(x=>x.id!==selectedAdvanceId);
-    saveDB(); renderAdvancesTable(); renderDashboard(); showToast('Advance deleted.');
-    clearAdvanceForm();
-  }
-
-  function renderAdvancesTable(){
-    const tbody = aEls.table();
-    let rows = DB.advances.slice();
-    // search
-    const q = advSearch.trim().toLowerCase();
-    if(q){ rows = rows.filter(r => Object.values(r).some(v=>(''+v).toLowerCase().includes(q))); }
-    // sort
-    rows.sort((a,b)=>{
-      const k=advSort.key; let va=a[k], vb=b[k];
-      if(k==='amount'){ va=Number(va||0); vb=Number(vb||0); }
-      if(va<vb) return advSort.dir==='asc'?-1:1;
-      if(va>vb) return advSort.dir==='asc'?1:-1;
-      return 0;
-    });
-    tbody.innerHTML = rows.map(r=>`
-      <tr data-id="${r.id}">
-        <td>${fmt.dateDisplay(r.date)}</td>
-        <td>${escapeHtml(r.month||'')}</td>
-        <td class="right">${fmt.currency(r.amount||0)}</td>
-        <td>${escapeHtml(r.remarks||'')}</td>
-      </tr>
-    `).join('');
-    tbody.querySelectorAll('tr').forEach(tr=>{
-      tr.addEventListener('click', ()=>{
-        tbody.querySelectorAll('tr').forEach(x=>x.classList.remove('selected'));
-        tr.classList.add('selected');
-        selectedAdvanceId = Number(tr.getAttribute('data-id'));
-        const rec = DB.advances.find(x=>x.id===selectedAdvanceId);
-        setAdvanceForm(rec);
-        aEls.btnUpdate().disabled = false; aEls.btnDelete().disabled = false;
-      });
-    });
-    const tot = rows.reduce((s,r)=>s+Number(r.amount||0),0);
-    aEls.total().textContent = fmt.currency(tot);
-
-    document.querySelectorAll('#a-table thead th').forEach(th=>{
-      th.onclick = ()=>{
-        const k = th.getAttribute('data-key');
-        if(k){
-          if(advSort.key===k) advSort.dir = advSort.dir==='asc'?'desc':'asc';
-          else { advSort.key = k; advSort.dir='asc'; }
-          renderAdvancesTable();
+      // --- Expenses ---
+      let expenseSelection = null;
+      function renderExpenseTypeOptions(){
+        const sel = document.getElementById('eType');
+        const typeList = Object.keys(state.breakup.map).sort();
+        sel.innerHTML = `<option value="" disabled ${typeList.length? '' : 'selected'}>Select type</option>` + typeList.map(t=>`<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+        // For Breakup type datalist
+        const dl = document.getElementById('typeList');
+        dl.innerHTML = typeList.map(t=>`<option value="${escapeHTML(t)}"></option>`).join('');
+      }
+      function renderDescDatalist(){
+        const type = document.getElementById('eType').value;
+        const list = (state.breakup.map[type] || []);
+        const dl = document.getElementById('descList');
+        dl.innerHTML = list.map(d=>`<option value="${escapeHTML(d)}"></option>`).join('');
+      }
+      function renderBreakupTable(){
+        const tbody = document.querySelector('#breakupTable tbody');
+        const arr = [];
+        for(const [type, descs] of Object.entries(state.breakup.map)){
+          if(!descs.length) arr.push({id:uid(), type, desc:''});
+          else descs.forEach(d => arr.push({id: type + '::' + d, type, desc:d}));
         }
+        tbody.innerHTML = arr.map(b => `
+          <tr data-id="${escapeHTML(b.id)}" data-type="${escapeHTML(b.type)}" data-desc="${escapeHTML(b.desc)}">
+            <td>${escapeHTML(b.type)}</td>
+            <td>${escapeHTML(b.desc)}</td>
+          </tr>
+        `).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--muted)">No breakup items yet.</td></tr>`;
+        breakupTableCtl?.filter?.();
+      }
+      function renderExpenseTable(){
+        const tbody = document.querySelector('#expenseTable tbody');
+        tbody.innerHTML = state.expenses.map(e => `
+          <tr data-id="${e.id}">
+            <td data-sort="${e.sr}">${e.sr}</td>
+            <td data-sort="${e.date}">${e.date}</td>
+            <td>${escapeHTML(e.type)}</td>
+            <td>${escapeHTML(e.desc || '')}</td>
+            <td data-sort="${e.amount}">${fmtMoney(e.amount)}</td>
+            <td>${escapeHTML(e.billno || '')}</td>
+            <td>${escapeHTML(e.remarks || '')}</td>
+          </tr>
+        `).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--muted)">No expenses yet.</td></tr>`;
+        expenseTableCtl?.filter?.();
+      }
+      function resetExpenseForm(){
+        expenseSelection = null;
+        document.getElementById('expenseForm').reset();
+        document.getElementById('eSr').value = state.srCounter;
+        document.getElementById('eDate').value = todayISO();
+        document.getElementById('eUpdateBtn').disabled = true;
+        document.getElementById('eDeleteBtn').disabled = true;
+        document.getElementById('eAddBtn').disabled = false;
+        expenseTableCtl?.clearSelection?.();
+      }
+      function printExpenseReport(){
+        const el = document.getElementById('print-area');
+        const rows = state.expenses.map(e=>`<tr>
+          <td>${e.sr}</td><td>${e.date}</td><td>${escapeHTML(e.type)}</td><td>${escapeHTML(e.desc||'')}</td><td>${fmtMoney(e.amount)}</td><td>${escapeHTML(e.billno||'')}</td><td>${escapeHTML(e.remarks||'')}</td>
+        </tr>`).join('');
+        el.innerHTML = `
+          <div style="max-width:1000px;margin:0 auto">
+            <h2>Expense Report</h2>
+            <table border="1" cellspacing="0" cellpadding="6" style="width:100%;border-collapse:collapse">
+              <thead><tr><th>Sr</th><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Bill No.</th><th>Remarks</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+        setTimeout(()=>window.print(), 30);
+      }
+
+      // --- Breakup add/update/delete ---
+      let breakupSelection = null; // store selected {type, desc}
+      function addOrUpdateBreakup({type, desc}, opts={}){
+        type = (type || '').trim();
+        desc = (desc || '').trim();
+        if(!type){ alert('Type is required'); return false; }
+        if(!state.breakup.map[type]) state.breakup.map[type] = [];
+        if(desc){
+          const list = state.breakup.map[type];
+          if(!list.includes(desc)) list.push(desc);
+        }
+        if(!opts.silent){ save(); renderExpenseTypeOptions(); renderDescDatalist(); renderBreakupTable(); }
+        return true;
+      }
+      function removeBreakup({type, desc}){
+        if(!state.breakup.map[type]) return;
+        if(desc){
+          state.breakup.map[type] = state.breakup.map[type].filter(d => d !== desc);
+        }else{
+          delete state.breakup.map[type];
+        }
+        save(); renderExpenseTypeOptions(); renderDescDatalist(); renderBreakupTable();
+      }
+
+      // --- Admin (Users) ---
+      let userSelection = null;
+      function renderUserTable(){
+        const tbody = document.querySelector('#userTable tbody');
+        tbody.innerHTML = state.users.map(u => `
+          <tr data-id="${u.id}">
+            <td>${escapeHTML(u.username)}</td>
+            <td>${escapeHTML(u.role)}</td>
+          </tr>
+        `).join('');
+        userTableCtl?.filter?.();
+      }
+      function resetUserForm(){
+        userSelection = null;
+        document.getElementById('userForm').reset();
+        document.getElementById('uUpdateBtn').disabled = true;
+        document.getElementById('uDeleteBtn').disabled = true;
+      }
+      function ensureAdminAccess(){
+        const isAdmin = state.currentUser?.role === 'Admin';
+        document.getElementById('adminNav').style.display = isAdmin ? '' : 'none';
+        if(!isAdmin && document.querySelector('.nav-links a.active')?.dataset.nav === 'admin'){
+          navigate('home');
+        }
+      }
+
+      // --- Auth & UI ---
+      function setUserUI(){
+        const badge = document.getElementById('userBadge');
+        if(state.currentUser){
+          badge.textContent = `${state.currentUser.username} (${state.currentUser.role})`;
+          badge.style.color = '#bbf7d0';
+          document.getElementById('logoutBtn').style.display = '';
+          document.getElementById('loginOverlay').style.display = 'none';
+          ensureAdminAccess();
+        }else{
+          badge.textContent = 'Guest';
+          document.getElementById('logoutBtn').style.display = 'none';
+          document.getElementById('loginOverlay').style.display = 'flex';
+        }
+      }
+      function login(username, password){
+        const user = state.users.find(u => u.username === username && u.password === password);
+        if(!user) return false;
+        state.currentUser = {id: user.id, username: user.username, role: user.role};
+        sessionStorage.setItem(SS_USER, JSON.stringify(state.currentUser));
+        setUserUI();
+        return true;
+      }
+      function logout(){
+        state.currentUser = null;
+        sessionStorage.removeItem(SS_USER);
+        setUserUI();
+      }
+
+      // --- Escape helper ---
+      function escapeHTML(str=''){
+        return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+      }
+
+      // --- Expenses tab switching ---
+      function showExpensesTab(id){
+        document.querySelectorAll('[data-exp-tab]').forEach(t => t.classList.toggle('active', t.dataset.expTab===id));
+        document.querySelectorAll('[data-exp-content]').forEach(c => c.style.display = c.dataset.expContent===id ? '' : 'none');
+      }
+
+      // --- INIT ---
+      let voucherTableCtl, advanceTableCtl, expenseTableCtl, breakupTableCtl, userTableCtl;
+
+      function init(){
+        load();
+
+        // Navbar
+        document.querySelectorAll('.nav-links a').forEach(a=>{
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            if(!state.currentUser){ return; }
+            navigate(a.dataset.nav);
+          });
+        });
+        document.getElementById('logoutBtn').addEventListener('click', ()=>{ logout(); });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', e=>{
+          e.preventDefault();
+          const u = document.getElementById('loginUser').value.trim();
+          const p = document.getElementById('loginPass').value;
+          const ok = login(u,p);
+          document.getElementById('loginError').textContent = ok ? '' : 'Invalid credentials';
+          if(ok){ updateDashboard(); }
+        });
+        setUserUI();
+
+        // Voucher events
+        document.getElementById('vDate').value = todayISO();
+        autoFillVoucherNo();
+        document.getElementById('vAuto').addEventListener('change', (e)=>{
+          const on = e.target.checked;
+          document.getElementById('vNo').disabled = on;
+          document.getElementById('vNo').placeholder = on ? 'Auto' : 'Enter manually';
+          if(on) autoFillVoucherNo();
+        });
+        document.getElementById('vAmount').addEventListener('input', ()=>{
+          const amt = Number(document.getElementById('vAmount').value || 0);
+          document.getElementById('vWords').value = amt ? numberToWordsIndian(amt) : '';
+        });
+        document.getElementById('voucherForm').addEventListener('submit', e=>{
+          e.preventDefault();
+          const v = {
+            id: uid(),
+            vno: (document.getElementById('vNo').value || '').trim(),
+            date: document.getElementById('vDate').value || todayISO(),
+            paidTo: document.getElementById('vPaidTo').value.trim(),
+            purpose: document.getElementById('vPurpose').value.trim(),
+            amount: Number(document.getElementById('vAmount').value || 0)
+          };
+          if(!v.vno) { alert('Voucher No is required'); return; }
+          state.vouchers.push(v);
+          save(); renderVoucherTable(); updateDashboard(); resetVoucherForm();
+        });
+        document.getElementById('vUpdateBtn').addEventListener('click', ()=>{
+          if(!voucherSelection) return;
+          const idx = state.vouchers.findIndex(x => x.id === voucherSelection);
+          if(idx<0) return;
+          const v = state.vouchers[idx];
+          v.vno = (document.getElementById('vNo').value || '').trim();
+          v.date = document.getElementById('vDate').value || todayISO();
+          v.paidTo = document.getElementById('vPaidTo').value.trim();
+          v.purpose = document.getElementById('vPurpose').value.trim();
+          v.amount = Number(document.getElementById('vAmount').value || 0);
+          save(); renderVoucherTable(); updateDashboard(); resetVoucherForm();
+        });
+        document.getElementById('vDeleteBtn').addEventListener('click', ()=>{
+          if(!voucherSelection) return;
+          if(!confirm('Delete selected voucher?')) return;
+          state.vouchers = state.vouchers.filter(v => v.id !== voucherSelection);
+          save(); renderVoucherTable(); updateDashboard(); resetVoucherForm();
+        });
+        document.getElementById('vPrintBtn').addEventListener('click', ()=>{
+          if(!voucherSelection) return;
+          const v = state.vouchers.find(x => x.id === voucherSelection);
+          if(v) printVoucher(v);
+        });
+        document.getElementById('vExportBtn').addEventListener('click', exportVouchers);
+
+        voucherTableCtl = attachTableInteractions({
+          tableId: 'voucherTable',
+          searchId: 'voucherSearch',
+          onRowClick: (id) => {
+            voucherSelection = id;
+            const v = state.vouchers.find(x => x.id === id);
+            fillVoucherForm(v || {});
+            document.getElementById('vUpdateBtn').disabled = !v;
+            document.getElementById('vDeleteBtn').disabled = !v;
+            document.getElementById('vPrintBtn').disabled = !v;
+            document.getElementById('vAddBtn').disabled = !!v;
+            document.getElementById('vAuto').checked = false;
+            document.getElementById('vNo').disabled = false;
+          }
+        });
+
+        // Advance events
+        document.getElementById('aDate').value = todayISO();
+        document.getElementById('aMonth').value = monthFromDate(todayISO());
+        document.getElementById('aDate').addEventListener('change', ()=>{
+          document.getElementById('aMonth').value = monthFromDate(document.getElementById('aDate').value);
+        });
+        document.getElementById('advanceForm').addEventListener('submit', e=>{
+          e.preventDefault();
+          const a = {
+            id: uid(),
+            date: document.getElementById('aDate').value || todayISO(),
+            month: document.getElementById('aMonth').value || monthFromDate(todayISO()),
+            amount: Number(document.getElementById('aAmount').value || 0),
+            remarks: document.getElementById('aRemarks').value.trim()
+          };
+          state.advances.push(a);
+          save(); renderAdvanceTable(); updateDashboard(); resetAdvanceForm();
+        });
+        document.getElementById('aUpdateBtn').addEventListener('click', ()=>{
+          if(!advanceSelection) return;
+          const idx = state.advances.findIndex(x => x.id === advanceSelection);
+          if(idx<0) return;
+          const a = state.advances[idx];
+          a.date = document.getElementById('aDate').value || todayISO();
+          a.month = document.getElementById('aMonth').value || monthFromDate(a.date);
+          a.amount = Number(document.getElementById('aAmount').value || 0);
+          a.remarks = document.getElementById('aRemarks').value.trim();
+          save(); renderAdvanceTable(); updateDashboard(); resetAdvanceForm();
+        });
+        document.getElementById('aDeleteBtn').addEventListener('click', ()=>{
+          if(!advanceSelection) return;
+          if(!confirm('Delete selected advance?')) return;
+          state.advances = state.advances.filter(a => a.id !== advanceSelection);
+          save(); renderAdvanceTable(); updateDashboard(); resetAdvanceForm();
+        });
+        document.getElementById('aPrintBtn').addEventListener('click', printAdvanceReport);
+
+        advanceTableCtl = attachTableInteractions({
+          tableId: 'advanceTable',
+          searchId: 'advanceSearch',
+          onRowClick: (id)=>{
+            advanceSelection = id;
+            const a = state.advances.find(x => x.id === id);
+            if(!a) return;
+            document.getElementById('aDate').value = a.date;
+            document.getElementById('aMonth').value = a.month;
+            document.getElementById('aAmount').value = a.amount;
+            document.getElementById('aRemarks').value = a.remarks || '';
+            document.getElementById('aUpdateBtn').disabled = false;
+            document.getElementById('aDeleteBtn').disabled = false;
+            document.getElementById('aAddBtn').disabled = true;
+          }
+        });
+
+        // Expenses events
+        renderExpenseTypeOptions();
+        renderDescDatalist();
+        document.getElementById('eType').addEventListener('change', renderDescDatalist);
+        resetExpenseForm();
+
+        document.getElementById('expenseForm').addEventListener('submit', e=>{
+          e.preventDefault();
+          const eitem = {
+            id: uid(),
+            sr: state.srCounter++,
+            date: document.getElementById('eDate').value || todayISO(),
+            type: document.getElementById('eType').value,
+            desc: document.getElementById('eDesc').value.trim(),
+            amount: Number(document.getElementById('eAmount').value || 0),
+            billno: document.getElementById('eBillNo').value.trim(),
+            remarks: document.getElementById('eRemarks').value.trim()
+          };
+          if(!eitem.type){ alert('Please select Expense Type'); return; }
+          state.expenses.push(eitem);
+          if(eitem.desc){
+            addOrUpdateBreakup({type:eitem.type, desc:eitem.desc}, {silent:true});
+          }
+          save(); renderExpenseTable(); renderBreakupTable(); renderExpenseTypeOptions(); updateDashboard(); resetExpenseForm();
+        });
+        document.getElementById('eUpdateBtn').addEventListener('click', ()=>{
+          if(!expenseSelection) return;
+          const idx = state.expenses.findIndex(x => x.id === expenseSelection);
+          if(idx<0) return;
+          const ei = state.expenses[idx];
+          ei.date = document.getElementById('eDate').value || todayISO();
+          ei.type = document.getElementById('eType').value;
+          ei.desc = document.getElementById('eDesc').value.trim();
+          ei.amount = Number(document.getElementById('eAmount').value || 0);
+          ei.billno = document.getElementById('eBillNo').value.trim();
+          ei.remarks = document.getElementById('eRemarks').value.trim();
+          if(ei.desc){
+            addOrUpdateBreakup({type:ei.type, desc:ei.desc}, {silent:true});
+          }
+          save(); renderExpenseTable(); renderBreakupTable(); renderExpenseTypeOptions(); updateDashboard(); resetExpenseForm();
+        });
+        document.getElementById('eDeleteBtn').addEventListener('click', ()=>{
+          if(!expenseSelection) return;
+          if(!confirm('Delete selected expense?')) return;
+          state.expenses = state.expenses.filter(e => e.id !== expenseSelection);
+          save(); renderExpenseTable(); updateDashboard(); resetExpenseForm();
+        });
+        document.getElementById('ePrintBtn').addEventListener('click', printExpenseReport);
+
+        expenseTableCtl = attachTableInteractions({
+          tableId: 'expenseTable',
+          searchId: 'expenseSearch',
+          onRowClick: (id)=>{
+            expenseSelection = id;
+            const eitem = state.expenses.find(x => x.id === id);
+            if(!eitem) return;
+            document.getElementById('eSr').value = eitem.sr;
+            document.getElementById('eDate').value = eitem.date;
+            document.getElementById('eType').value = eitem.type;
+            renderDescDatalist();
+            document.getElementById('eDesc').value = eitem.desc || '';
+            document.getElementById('eAmount').value = eitem.amount;
+            document.getElementById('eBillNo').value = eitem.billno || '';
+            document.getElementById('eRemarks').value = eitem.remarks || '';
+            document.getElementById('eUpdateBtn').disabled = false;
+            document.getElementById('eDeleteBtn').disabled = false;
+            document.getElementById('eAddBtn').disabled = true;
+          }
+        });
+
+        // Breakup events
+        document.getElementById('breakupForm').addEventListener('submit', e=>{
+          e.preventDefault();
+          const type = document.getElementById('bType').value;
+          const desc = document.getElementById('bDesc').value;
+          const ok = addOrUpdateBreakup({type, desc});
+          if(ok){
+            document.getElementById('bType').value = '';
+            document.getElementById('bDesc').value = '';
+          }
+        });
+        document.getElementById('bUpdateBtn').addEventListener('click', ()=>{
+          if(!breakupSelection) return;
+          const old = breakupSelection;
+          const newType = document.getElementById('bType').value.trim();
+          const newDesc = document.getElementById('bDesc').value.trim();
+          if(old.type !== newType){
+            removeBreakup({type: old.type, desc: old.desc});
+            addOrUpdateBreakup({type: newType, desc: newDesc});
+          }else{
+            if(old.desc && old.desc !== newDesc){
+              removeBreakup({type: old.type, desc: old.desc});
+              addOrUpdateBreakup({type: newType, desc: newDesc});
+            }else if(!old.desc && newDesc){
+              addOrUpdateBreakup({type: newType, desc: newDesc});
+            }else if(!newDesc){
+              addOrUpdateBreakup({type: newType, desc: ''});
+            }
+          }
+          breakupSelection = null;
+          document.getElementById('bUpdateBtn').disabled = true;
+          document.getElementById('bDeleteBtn').disabled = true;
+          document.getElementById('bType').value = '';
+          document.getElementById('bDesc').value = '';
+        });
+        document.getElementById('bDeleteBtn').addEventListener('click', ()=>{
+          if(!breakupSelection) return;
+          if(!confirm('Delete this record from breakup?')) return;
+          removeBreakup(breakupSelection);
+          breakupSelection = null;
+          document.getElementById('bUpdateBtn').disabled = true;
+          document.getElementById('bDeleteBtn').disabled = true;
+          document.getElementById('bType').value = '';
+          document.getElementById('bDesc').value = '';
+        });
+
+        breakupTableCtl = attachTableInteractions({
+          tableId: 'breakupTable',
+          searchId: 'breakupSearch',
+          onRowClick: (id)=>{
+            const tr = document.querySelector(`#breakupTable tbody tr[data-id="${CSS.escape(id)}"]`);
+            if(!tr) return;
+            breakupSelection = {type: tr.dataset.type, desc: tr.dataset.desc};
+            document.getElementById('bType').value = breakupSelection.type;
+            document.getElementById('bDesc').value = breakupSelection.desc;
+            document.getElementById('bUpdateBtn').disabled = false;
+            document.getElementById('bDeleteBtn').disabled = false;
+          }
+        });
+
+        // Admin events
+        renderUserTable();
+        document.getElementById('userForm').addEventListener('submit', e=>{
+          e.preventDefault();
+          const username = document.getElementById('uUsername').value.trim();
+          const password = document.getElementById('uPassword').value;
+          const confirm = document.getElementById('uConfirm').value;
+          const role = document.getElementById('uRole').value;
+          if(!username || !password){ alert('Username and password required'); return; }
+          if(password !== confirm){ alert('Passwords do not match'); return; }
+          if(state.users.some(u => u.username === username)){ alert('Username already exists'); return; }
+          state.users.push({id: uid(), username, password, role});
+          save(); renderUserTable(); resetUserForm();
+        });
+        document.getElementById('uUpdateBtn').addEventListener('click', ()=>{
+          if(!userSelection) return;
+          const idx = state.users.findIndex(u => u.id === userSelection);
+          if(idx<0) return;
+          const username = document.getElementById('uUsername').value.trim();
+          const password = document.getElementById('uPassword').value;
+          const confirm = document.getElementById('uConfirm').value;
+          const role = document.getElementById('uRole').value;
+          if(!username || !password){ alert('Username and password required'); return; }
+          if(password !== confirm){ alert('Passwords do not match'); return; }
+          if(state.users.some((u,i) => i!==idx && u.username === username)){ alert('Username already exists'); return; }
+          state.users[idx] = {...state.users[idx], username, password, role};
+          save(); renderUserTable(); resetUserForm();
+        });
+        document.getElementById('uDeleteBtn').addEventListener('click', ()=>{
+          if(!userSelection) return;
+          const me = state.users.find(u => u.id === userSelection);
+          if(me?.username === state.currentUser?.username){ alert('Cannot delete currently logged in user'); return; }
+          if(!confirm('Delete selected user?')) return;
+          state.users = state.users.filter(u => u.id !== userSelection);
+          save(); renderUserTable(); resetUserForm();
+        });
+
+        userTableCtl = attachTableInteractions({
+          tableId: 'userTable',
+          searchId: 'userSearch',
+          onRowClick: (id)=>{
+            userSelection = id;
+            const u = state.users.find(x => x.id === id);
+            if(!u) return;
+            document.getElementById('uUsername').value = u.username;
+            document.getElementById('uPassword').value = u.password;
+            document.getElementById('uConfirm').value = u.password;
+            document.getElementById('uRole').value = u.role;
+            document.getElementById('uUpdateBtn').disabled = false;
+            document.getElementById('uDeleteBtn').disabled = false;
+          }
+        });
+
+        // Initial renders
+        renderVoucherTable();
+        renderAdvanceTable();
+        renderExpenseTable();
+        renderBreakupTable();
+        updateDashboard();
+      }
+
+      // Public API
+      return {
+        init,
+        navigate,
+        showExpensesTab
       };
-    });
-  }
+    })();
 
-  // ------------------------------ Expenses ------------------------------
-  let expSort = { key:'date', dir:'desc' };
-  let expSearch = '';
-  let selectedExpenseId = null;
-
-  const eEls = {
-    srno: ()=>document.getElementById('e-srno'),
-    date: ()=>document.getElementById('e-date'),
-    type: ()=>document.getElementById('e-type'),
-    desc: ()=>document.getElementById('e-desc'),
-    amount: ()=>document.getElementById('e-amount'),
-    bill: ()=>document.getElementById('e-bill'),
-    remarks: ()=>document.getElementById('e-remarks'),
-    table: ()=>document.querySelector('#e-table tbody'),
-    total: ()=>document.getElementById('e-total'),
-    btnUpdate: ()=>document.getElementById('e-update'),
-    btnDelete: ()=>document.getElementById('e-delete')
-  };
-
-  function readExpenseForm(){
-    return {
-      srno: Number(eEls.srno().value||0) || nextExpenseSr(),
-      date: eEls.date().value || fmt.dateISO(new Date()),
-      type: eEls.type().value.trim(),
-      description: eEls.desc().value.trim(),
-      amount: Number(eEls.amount().value||0),
-      billno: eEls.bill().value.trim(),
-      remarks: eEls.remarks().value.trim()
-    };
-  }
-  function setExpenseForm(d){
-    eEls.srno().value = d.srno ?? '';
-    eEls.date().value = d.date || '';
-    eEls.type().value = d.type || '';
-    eEls.desc().value = d.description || '';
-    eEls.amount().value = d.amount ?? '';
-    eEls.bill().value = d.billno || '';
-    eEls.remarks().value = d.remarks || '';
-  }
-  function clearExpenseForm(){
-    setExpenseForm({ srno: nextExpenseSr(), date: fmt.dateISO(new Date()), type:'', description:'', amount:'', billno:'', remarks:'' });
-    selectedExpenseId = null; eEls.btnUpdate().disabled = true; eEls.btnDelete().disabled = true;
-  }
-  function addExpense(){
-    const f = readExpenseForm();
-    if(!f.type || !(f.amount>0)){ showToast('Select/enter a Type and valid Amount.'); return; }
-    // maintain nextExpenseSr if user didn't override
-    DB.counters.expenseSr = Math.max(DB.counters.expenseSr, (f.srno||0)+1);
-    const rec = { id: nextId(), ...f };
-    DB.expenses.push(rec); saveDB();
-    renderExpensesTable(); renderDashboard(); showToast('Expense added.');
-    clearExpenseForm();
-    // also add to breakup suggestions if new combination
-    if(f.type && f.description && !DB.breakups.some(b=>b.type.toLowerCase()===f.type.toLowerCase() && b.description.toLowerCase()===f.description.toLowerCase())){
-      DB.breakups.push({id: nextId(), type:f.type, description:f.description});
-      saveDB(); renderBreakupDatalists(); renderBreakupTable();
-    }
-  }
-  function updateExpense(){
-    if(!selectedExpenseId){ showToast('Select an expense row.'); return; }
-    const f = readExpenseForm();
-    const idx = DB.expenses.findIndex(x=>x.id===selectedExpenseId);
-    if(idx>=0){
-      DB.expenses[idx] = { ...DB.expenses[idx], ...f };
-      saveDB(); renderExpensesTable(); renderDashboard(); showToast('Expense updated.');
-    }
-  }
-  function deleteExpense(){
-    if(!selectedExpenseId){ showToast('Select an expense row.'); return; }
-    if(!confirm('Delete selected expense?')) return;
-    DB.expenses = DB.expenses.filter(x=>x.id!==selectedExpenseId);
-    saveDB(); renderExpensesTable(); renderDashboard(); showToast('Expense deleted.');
-    clearExpenseForm();
-  }
-
-  function renderExpensesTable(){
-    const tbody = eEls.table();
-    let rows = DB.expenses.slice();
-    // search
-    const q = expSearch.trim().toLowerCase();
-    if(q){ rows = rows.filter(r => Object.values(r).some(v=>(''+v).toLowerCase().includes(q))); }
-    // sort
-    rows.sort((a,b)=>{
-      const k=expSort.key; let va=a[k], vb=b[k];
-      if(k==='amount' || k==='srno'){ va=Number(va||0); vb=Number(vb||0); }
-      if(va<vb) return expSort.dir==='asc'?-1:1;
-      if(va>vb) return expSort.dir==='asc'?1:-1;
-      return 0;
-    });
-    tbody.innerHTML = rows.map(r=>`
-      <tr data-id="${r.id}">
-        <td>${escapeHtml(r.srno)}</td>
-        <td>${fmt.dateDisplay(r.date)}</td>
-        <td>${escapeHtml(r.type||'')}</td>
-        <td>${escapeHtml(r.description||'')}</td>
-        <td class="right">${fmt.currency(r.amount||0)}</td>
-        <td>${escapeHtml(r.billno||'')}</td>
-        <td>${escapeHtml(r.remarks||'')}</td>
-      </tr>
-    `).join('');
-    tbody.querySelectorAll('tr').forEach(tr=>{
-      tr.addEventListener('click', ()=>{
-        tbody.querySelectorAll('tr').forEach(x=>x.classList.remove('selected'));
-        tr.classList.add('selected');
-        selectedExpenseId = Number(tr.getAttribute('data-id'));
-        const rec = DB.expenses.find(x=>x.id===selectedExpenseId);
-        setExpenseForm(rec);
-        eEls.btnUpdate().disabled = false; eEls.btnDelete().disabled = false;
-      });
-    });
-    const tot = rows.reduce((s,r)=>s+Number(r.amount||0),0);
-    eEls.total().textContent = fmt.currency(tot);
-
-    document.querySelectorAll('#e-table thead th').forEach(th=>{
-      th.onclick = ()=>{
-        const k = th.getAttribute('data-key');
-        if(k){
-          if(expSort.key===k) expSort.dir = expSort.dir==='asc'?'desc':'asc';
-          else { expSort.key = k; expSort.dir='asc'; }
-          renderExpensesTable();
-        }
-      };
-    });
-  }
-
-  // ------------------------------ Breakup ------------------------------
-  let bSort = { key:'type', dir:'asc' };
-  let bSearch = '';
-  let selectedBreakupId = null;
-
-  const bEls = {
-    type: ()=>document.getElementById('b-type'),
-    desc: ()=>document.getElementById('b-desc'),
-    table: ()=>document.querySelector('#b-table tbody'),
-    btnUpdate: ()=>document.getElementById('b-update'),
-    btnDelete: ()=>document.getElementById('b-delete'),
-  };
-
-  function addBreakup(){
-    const type = bEls.type().value.trim();
-    const desc = bEls.desc().value.trim();
-    if(!type || !desc){ showToast('Enter Type and Description.'); return; }
-    if(DB.breakups.some(b=>b.type.toLowerCase()===type.toLowerCase() && b.description.toLowerCase()===desc.toLowerCase())){
-      showToast('This Type + Description already exists.'); return;
-    }
-    DB.breakups.push({ id: nextId(), type, description:desc });
-    saveDB(); renderBreakupTable(); renderBreakupDatalists(); showToast('Breakup added.');
-    bEls.type().value = ''; bEls.desc().value='';
-    bEls.btnUpdate().disabled = true; bEls.btnDelete().disabled = true; selectedBreakupId=null;
-  }
-  function updateBreakup(){
-    if(!selectedBreakupId){ showToast('Select a breakup row.'); return; }
-    const t = bEls.type().value.trim(); const d = bEls.desc().value.trim();
-    if(!t || !d){ showToast('Enter Type and Description.'); return; }
-    const idx = DB.breakups.findIndex(x=>x.id===selectedBreakupId);
-    if(idx>=0){
-      DB.breakups[idx] = { ...DB.breakups[idx], type:t, description:d };
-      saveDB(); renderBreakupTable(); renderBreakupDatalists(); showToast('Breakup updated.');
-    }
-  }
-  function deleteBreakup(){
-    if(!selectedBreakupId){ showToast('Select a breakup row.'); return; }
-    if(!confirm('Delete selected breakup?')) return;
-    DB.breakups = DB.breakups.filter(x=>x.id!==selectedBreakupId);
-    saveDB(); renderBreakupTable(); renderBreakupDatalists(); showToast('Breakup deleted.');
-    bEls.type().value=''; bEls.desc().value=''; selectedBreakupId=null; bEls.btnUpdate().disabled=true; bEls.btnDelete().disabled=true;
-  }
-
-  function renderBreakupTable(){
-    const tbody = bEls.table();
-    let rows = DB.breakups.slice();
-    const q = bSearch.trim().toLowerCase();
-    if(q){ rows = rows.filter(r => (r.type+' '+r.description).toLowerCase().includes(q)); }
-    rows.sort((a,b)=>{
-      const k=bSort.key; let va=(a[k]||'').toLowerCase(), vb=(b[k]||'').toLowerCase();
-      if(va<vb) return bSort.dir==='asc'?-1:1;
-      if(va>vb) return bSort.dir==='asc'?1:-1;
-      return 0;
-    });
-    tbody.innerHTML = rows.map(r=>`
-      <tr data-id="${r.id}">
-        <td>${escapeHtml(r.type)}</td>
-        <td>${escapeHtml(r.description)}</td>
-      </tr>
-    `).join('');
-    tbody.querySelectorAll('tr').forEach(tr=>{
-      tr.addEventListener('click', ()=>{
-        tbody.querySelectorAll('tr').forEach(x=>x.classList.remove('selected'));
-        tr.classList.add('selected');
-        selectedBreakupId = Number(tr.getAttribute('data-id'));
-        const rec = DB.breakups.find(x=>x.id===selectedBreakupId);
-        bEls.type().value = rec.type; bEls.desc().value = rec.description;
-        bEls.btnUpdate().disabled=false; bEls.btnDelete().disabled=false;
-      });
-    });
-    document.querySelectorAll('#b-table thead th').forEach(th=>{
-      th.onclick = ()=>{
-        const k = th.getAttribute('data-key');
-        if(k){
-          if(bSort.key===k) bSort.dir = bSort.dir==='asc'?'desc':'asc';
-          else { bSort.key = k; bSort.dir='asc'; }
-          renderBreakupTable();
-        }
-      };
-    });
-  }
-
-  function renderBreakupDatalists(){
-    const types = Array.from(new Set(DB.breakups.map(b=>b.type))).sort((a,b)=>a.localeCompare(b));
-    const typeList = document.getElementById('type-list');
-    typeList.innerHTML = types.map(t=>`<option value="${escapeHtml(t)}"></option>`).join('');
-    // descriptions depend on current selected type in expenses form
-    const selType = (document.getElementById('e-type').value||'').trim();
-    const descs = Array.from(new Set(DB.breakups.filter(b=>!selType || b.type.toLowerCase()===selType.toLowerCase()).map(b=>b.description))).sort((a,b)=>a.localeCompare(b));
-    const descList = document.getElementById('desc-list');
-    descList.innerHTML = descs.map(d=>`<option value="${escapeHtml(d)}"></option>`).join('');
-  }
-
-  // ------------------------------ Dashboard ------------------------------
-  let pieChart = null;
-  function totals(){
-    const voucherSum = DB.vouchers.reduce((s,r)=>s+Number(r.amount||0),0);
-    const adv = DB.advances.reduce((s,r)=>s+Number(r.amount||0),0);
-    const exp = DB.expenses.reduce((s,r)=>s+Number(r.amount||0),0);
-    const balance = adv - exp;
-    return { voucherCount: DB.vouchers.length, voucherSum, adv, exp, balance };
-  }
-  function renderDashboard(){
-    const t = totals();
-    document.getElementById('d-voucher-count').textContent = t.voucherCount;
-    document.getElementById('d-voucher-amount').textContent = fmt.currency(t.voucherSum);
-    document.getElementById('d-adv').textContent = fmt.currency(t.adv);
-    document.getElementById('d-exp').textContent = fmt.currency(t.exp);
-    document.getElementById('d-balance').textContent = (t.balance>=0 ? '' : '-') + fmt.currency(Math.abs(t.balance));
-    const ctx = document.getElementById('pieChart');
-    const expenses = t.exp;
-    const balancePositive = Math.max(0, t.adv - t.exp);
-    const deficit = Math.max(0, t.exp - t.adv);
-    const showDeficit = deficit>0;
-    document.getElementById('deficit-note').style.display = showDeficit?'inline-flex':'none';
-    const data = {
-      labels: showDeficit ? ['Expenses','Deficit'] : ['Expenses','Balance'],
-      datasets: [{
-        data: [ showDeficit ? expenses : expenses, showDeficit ? deficit : balancePositive ],
-        backgroundColor: showDeficit ? ['#ef4444','#f59e0b'] : ['#3b82f6','#22c55e'],
-        borderWidth: 0
-      }]
-    };
-    if(pieChart){ pieChart.data = data; pieChart.update(); }
-    else {
-      pieChart = new Chart(ctx, {
-        type:'doughnut',
-        data,
-        options:{
-          plugins:{ legend:{ labels:{ color:'#cbd5e1' } } },
-          cutout:'55%'
-        }
-      });
-    }
-  }
-
-  // ------------------------------ Printing Reports ------------------------------
-  function printTableReport(title, columns, rows){
-    const headers = columns.map(c=>`<th style="text-align:${c.right?'right':'left'}">${escapeHtml(c.title)}</th>`).join('');
-    const trs = rows.map(r=>{
-      const tds = columns.map(c=>{
-        const val = typeof c.value==='function'? c.value(r) : r[c.key];
-        return `<td style="padding:8px 10px; border-bottom:1px solid #ddd; text-align:${c.right?'right':'left'}">${escapeHtml(val??'')}</td>`;
-      }).join('');
-      return `<tr>${tds}</tr>`;
-    }).join('');
-    const html = `
-      <html><head><title>${escapeHtml(title)}</title>
-      <style>
-        body{font-family:Inter,Arial; padding:24px; color:#111}
-        h2{margin:0 0 12px 0}
-        table{width:100%; border-collapse:collapse; border:1px solid #ccc}
-        th{background:#f3f4f6; text-align:left; padding:8px 10px; border-bottom:1px solid #ccc}
-      </style>
-      </head><body onload="window.print()">
-        <h2>${escapeHtml(title)}</h2>
-        <table>
-          <thead><tr>${headers}</tr></thead>
-          <tbody>${trs}</tbody>
-        </table>
-      </body></html>`;
-    const w = window.open('', '_blank'); w.document.write(html); w.document.close();
-  }
-
-  // ------------------------------ Utilities ------------------------------
-  function escapeHtml(s){
-    return (''+s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-  }
-  function setSubtab(name){
-    document.querySelectorAll('.subtab').forEach(b=>b.classList.toggle('active', b.dataset.subtab===name));
-    document.querySelectorAll('.subpage').forEach(p=>p.classList.remove('active'));
-    document.getElementById('subtab-'+name).classList.add('active');
-    if(name==='advance') renderAdvancesTable();
-    if(name==='expenses') { renderBreakupDatalists(); renderExpensesTable(); }
-    if(name==='breakup') renderBreakupTable();
-  }
-
-  // ------------------------------ Event Wiring ------------------------------
-  function wireEvents(){
-    // Navbar
-    document.querySelectorAll('.nav a').forEach(a=>{
-      a.addEventListener('click', (e)=>{
-        e.preventDefault();
-        Router.go(a.dataset.route);
-      });
-    });
-
-    // Voucher actions
-    document.getElementById('v-add').onclick = addVoucher;
-    document.getElementById('v-update').onclick = updateVoucher;
-    document.getElementById('v-delete').onclick = deleteVoucher;
-    document.getElementById('v-print').onclick = printVoucher;
-    document.getElementById('v-search').oninput = (e)=>{ voucherSearch = e.target.value; renderVouchersTable(); };
-    document.getElementById('v-amount').addEventListener('input', ()=> vEls.amountWords().value = numberToWordsIndian(Number(vEls.amount().value||0)));
-    // Export dropdown
-    const dd = document.getElementById('v-export').parentElement;
-    document.getElementById('v-export').onclick = ()=> dd.classList.toggle('open');
-    document.body.addEventListener('click', (e)=>{ if(!dd.contains(e.target)) dd.classList.remove('open'); });
-    document.getElementById('v-export-xlsx').onclick = ()=>{ exportVouchersXLSX(); dd.classList.remove('open'); };
-    document.getElementById('v-export-csv').onclick = ()=>{ exportVouchersCSV(); dd.classList.remove('open'); };
-
-    // Advances
-    document.getElementById('a-add').onclick = addAdvance;
-    document.getElementById('a-update').onclick = updateAdvance;
-    document.getElementById('a-delete').onclick = deleteAdvance;
-    document.getElementById('a-search').oninput = (e)=>{ advSearch = e.target.value; renderAdvancesTable(); };
-    document.getElementById('a-date').onchange = ()=>{ document.getElementById('a-month').value = fmt.monthFromDate(document.getElementById('a-date').value); };
-    document.getElementById('a-print').onclick = ()=>{
-      const rows = DB.advances.slice().sort((a,b)=>a.date<b.date?-1:1);
-      printTableReport('Advance Report', [
-        {title:'Date', key:'date', value:r=>fmt.dateDisplay(r.date)},
-        {title:'Month', key:'month'},
-        {title:'Amount', key:'amount', value:r=>fmt.currency(r.amount), right:true},
-        {title:'Remarks', key:'remarks'}
-      ], rows);
-    };
-
-    // Expenses
-    document.getElementById('e-add').onclick = addExpense;
-    document.getElementById('e-update').onclick = updateExpense;
-    document.getElementById('e-delete').onclick = deleteExpense;
-    document.getElementById('e-search').oninput = (e)=>{ expSearch = e.target.value; renderExpensesTable(); };
-    document.getElementById('e-type').addEventListener('input', renderBreakupDatalists);
-    document.getElementById('e-print').onclick = ()=>{
-      const rows = DB.expenses.slice().sort((a,b)=>a.date<b.date?-1:1);
-      printTableReport('Expenses Report', [
-        {title:'Sr.No', key:'srno'},
-        {title:'Date', key:'date', value:r=>fmt.dateDisplay(r.date)},
-        {title:'Type', key:'type'},
-        {title:'Description', key:'description'},
-        {title:'Amount', key:'amount', value:r=>fmt.currency(r.amount), right:true},
-        {title:'Bill No', key:'billno'},
-        {title:'Remarks', key:'remarks'}
-      ], rows);
-    };
-
-    // Breakup
-    document.getElementById('b-add').onclick = addBreakup;
-    document.getElementById('b-update').onclick = updateBreakup;
-    document.getElementById('b-delete').onclick = deleteBreakup;
-    document.getElementById('b-search').oninput = (e)=>{ bSearch = e.target.value; renderBreakupTable(); };
-  }
-
-  // ------------------------------ Init ------------------------------
-  function init(){
-    loadDB();
-    wireEvents();
-    // Default dates + numbers
-    ensureVoucherNo();
-    document.getElementById('v-date').value = fmt.dateISO(new Date());
-    document.getElementById('a-date').value = fmt.dateISO(new Date());
-    document.getElementById('a-month').value = fmt.monthFromDate(document.getElementById('a-date').value);
-    document.getElementById('e-srno').value = DB.counters.expenseSr;
-    document.getElementById('e-date').value = fmt.dateISO(new Date());
-    renderBreakupDatalists();
-    renderVouchersTable();
-    renderAdvancesTable();
-    renderExpensesTable();
-    renderBreakupTable();
-   
-    // Route from hash
-    const route = location.hash.replace('#','') || 'home';
-    Router.render(route);
-  }
-
-  document.addEventListener('DOMContentLoaded', init);
+    // Start the app
+    document.addEventListener('DOMContentLoaded', App.init);
   </script>
 </body>
 </html>
