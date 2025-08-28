@@ -5,44 +5,40 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Voucher & Expenses Manager</title>
   <meta name="color-scheme" content="light dark" />
-  <!-- Chart.js for Pie Chart -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- SheetJS for Excel Export -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Defer heavy libs -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root{
       --bg: #0b1020;
-      --bg-2: #121833;
       --card: #0f172a;
       --text: #e5e7eb;
       --muted: #9ca3af;
       --primary: #6366f1;
       --primary-2: #818cf8;
       --accent: #14b8a6;
-      --accent-2: #22d3ee;
       --danger: #ef4444;
       --warning: #f59e0b;
       --success: #10b981;
       --border: #1f2937;
-      --shadow: 0 10px 25px rgba(0,0,0,.25);
+      --shadow: 0 8px 18px rgba(0,0,0,.18); /* lighter shadow */
       --radius: 12px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:linear-gradient(180deg,var(--bg),#070a17);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    html,body{margin:0;padding:0;background:#0b1020;color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
     a{color:inherit;text-decoration:none}
     .container{max-width:1200px;margin:0 auto;padding:24px}
 
-    /* Navbar */
+    /* Navbar (no blur for performance) */
     .navbar{
       position: sticky; top:0; z-index:1000;
-      backdrop-filter: blur(10px);
-      background: rgba(11,16,32,.75);
+      background:#0b1020; /* solid background */
       border-bottom: 1px solid var(--border);
     }
     .nav-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
     .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.3px}
-    .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(45deg,var(--accent),var(--accent-2));box-shadow:0 0 10px var(--accent)}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(45deg,var(--accent),#22d3ee)}
     .nav-links{display:flex;gap:10px;flex-wrap:wrap}
     .nav-links a{
       padding:10px 14px;border-radius:10px;border:1px solid transparent; color:var(--text);
@@ -50,16 +46,10 @@
     .nav-links a.active, .nav-links a:hover{
       background:linear-gradient(180deg,rgba(99,102,241,.15),rgba(99,102,241,.05));
       border-color: rgba(99,102,241,.35);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
     }
     .userbox{display:flex;align-items:center;gap:12px}
-    .badge{
-      padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)
-    }
-    .btn{
-      appearance:none;border:none;background:var(--primary);color:white;padding:10px 14px;border-radius:10px;cursor:pointer;
-      box-shadow: var(--shadow); transition:.15s transform, .15s opacity;
-    }
+    .badge{padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+    .btn{appearance:none;border:none;background:var(--primary);color:white;padding:10px 14px;border-radius:10px;cursor:pointer;box-shadow: var(--shadow);transition:.15s transform}
     .btn:active{transform:translateY(1px)}
     .btn.secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
     .btn.ghost{background:transparent;color:var(--muted)}
@@ -69,14 +59,13 @@
     .btn.icon{display:inline-flex;align-items:center;gap:8px}
     .btn.small{padding:6px 10px;border-radius:8px;font-size:14px}
 
-    /* Sections */
-    section{display:none;animation:fade .2s ease; }
+    /* Sections (no animations for instant paint) */
+    section{display:none}
     section.active{display:block}
-    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
     /* Cards and panels */
     .panel{
-      background: linear-gradient(180deg,var(--card), #0c1329);
+      background: #0f172a;
       border:1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
@@ -92,8 +81,7 @@
 
     /* Dashboard */
     .card{
-      padding:16px;border-radius:14px;border:1px solid var(--border);position:relative;overflow:hidden;
-      background: radial-gradient(1200px 300px at -10% -60%, rgba(99,102,241,.12), transparent 50%), linear-gradient(180deg,var(--card),#0c142c);
+      padding:16px;border-radius:14px;border:1px solid var(--border);background:#0f172a
     }
     .card .label{color:var(--muted);font-size:13px}
     .card .value{font-size:28px;font-weight:700;margin-top:4px}
@@ -110,10 +98,9 @@
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
     input, select, textarea{
       width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0a1126;color:var(--text);
-      outline:none;transition:border-color .15s, box-shadow .15s;
+      outline:none;transition:border-color .1s;
     }
-    input:focus, select:focus, textarea:focus{border-color: rgba(129,140,248,.6);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
-    .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    input:focus, select:focus, textarea:focus{border-color: rgba(129,140,248,.6);box-shadow:0 0 0 2px rgba(99,102,241,.12)}
 
     /* Tabs */
     .tabs{display:flex;gap:8px;margin-bottom:12px; flex-wrap:wrap}
@@ -124,24 +111,24 @@
     .table-wrap{margin-top:16px}
     .table-tools{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:10px}
     .search{flex:1}
-    table{width:100%;border-collapse:separate;border-spacing:0;width:100%;overflow:hidden;border-radius:12px;border:1px solid var(--border)}
+    table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:12px;border:1px solid var(--border)}
     thead th{position:sticky;top:0;background:#0b132a;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;color:var(--muted);text-align:left;padding:12px;cursor:pointer;user-select:none}
     tbody td{padding:12px;border-bottom:1px solid var(--border)}
     tbody tr:hover{background:rgba(99,102,241,.06)}
     tr.selected{outline:2px solid var(--primary-2);background:rgba(129,140,248,.08)}
 
-    /* Login overlay */
+    /* Login overlay (simple solid bg for performance) */
     .overlay{
-      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background: radial-gradient(600px 300px at 10% -10%, rgba(34,197,94,.1), transparent 50%), rgba(2,6,23,.85);
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background: rgba(2,6,23,.92);
       z-index: 2000;
     }
-    .login-card{width:min(420px, calc(100% - 32px));padding:22px;border-radius:14px;background:linear-gradient(180deg,var(--card),#0c142c);border:1px solid var(--border);box-shadow: var(--shadow)}
+    .login-card{width:min(420px, calc(100% - 32px));padding:22px;border-radius:14px;background:#0f172a;border:1px solid var(--border);box-shadow: var(--shadow)}
     .login-card h2{margin:0 0 4px}
     .login-card p{margin:0 0 14px;color:var(--muted);font-size:14px}
     .hint{font-size:12px;color:var(--muted)}
     .error{color:#fecaca;font-size:13px;margin-top:6px;min-height:18px}
 
-    /* Print rules */
+    /* Print */
     @media print{
       body{background:#fff;color:#000}
       .navbar,.no-print,.tabs{display:none !important}
@@ -150,9 +137,7 @@
       .panel, .card, .table-wrap, .login-card{box-shadow:none;border: none}
     }
     #print-area{display:none}
-    .voucher-print{
-      max-width:720px;margin:0 auto;padding:24px;border:1px dashed #888;border-radius:8px;background:#fff;color:#000
-    }
+    .voucher-print{max-width:720px;margin:0 auto;padding:24px;border:1px dashed #888;border-radius:8px;background:#fff;color:#000}
     .voucher-print h2{margin-top:0}
     .voucher-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .voucher-grid div{padding:6px 8px;border:1px solid #ddd;border-radius:6px;background:#fafafa}
@@ -532,9 +517,8 @@
           It uses modern CSS, vanilla JavaScript, and popular client-side libraries for charts and export.
         </p>
         <ul>
-          <li>Version: 1.0.1</li>
-          <li>Tech: Vanilla JS, Chart.js, SheetJS</li>
-          <li>Tables: Custom search & sort, print-friendly</li>
+          <li>Version: 1.0.2 (Performance)</li>
+          <li>Optimized: No blur, reduced animations, deferred libs</li>
         </ul>
         <p class="hint">Authentication is client-side only; do not rely on it for production security.</p>
       </div>
@@ -547,123 +531,58 @@
 
   <script>
     const App = (() => {
-      // --- State ---
       const LS_KEY = 'expenseAppData.clean.v1';
       const SS_USER = 'expenseAppUser.clean.v1';
       const state = {
-        vouchers: [],
-        advances: [],
-        expenses: [],
-        breakup: { map: {} }, // type -> [descriptions]
-        users: [],
-        srCounter: 1,
+        vouchers: [], advances: [], expenses: [],
+        breakup: { map: {} }, users: [], srCounter: 1,
         currentUser: null
       };
 
-      // --- Utils ---
       const fmtMoney = (n) => '₹' + (Number(n||0)).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
       const toISO = (d) => d ? new Date(d).toISOString().slice(0,10) : '';
       const uid = () => (crypto?.randomUUID?.() || ('id-' + Date.now() + '-' + Math.random().toString(16).slice(2)));
-      const monthFromDate = (dateStr) => {
-        if(!dateStr) return '';
-        const d = new Date(dateStr);
-        return d.toLocaleString('en-IN', {month:'long', year:'numeric'});
-      };
+      const monthFromDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleString('en-IN', {month:'long', year:'numeric'}) : '';
       const todayISO = () => toISO(new Date());
 
-      // Indian Number to Words (Rupees)
       function numberToWordsIndian(n){
-        n = Number(n);
-        if(isNaN(n)) return '';
+        n = Number(n); if(isNaN(n)) return '';
         if(n === 0) return 'Zero Rupees Only';
         const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
         const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-
-        function twoDigits(num){
-          if(num < 20) return ones[num];
-          const t = Math.floor(num/10);
-          const r = num%10;
-          return tens[t] + (r? ' ' + ones[r] : '');
-        }
-        function threeDigits(num){
-          const h = Math.floor(num/100);
-          const rest = num % 100;
-          const hPart = h ? ones[h] + ' Hundred' + (rest ? ' ' : '') : '';
-          return hPart + twoDigits(rest);
-        }
-        let str = '';
-        const rupees = Math.floor(n);
-        const paise = Math.round((n - rupees)*100);
-
-        // Split rupees into Indian groups: crore, lakh, thousand, hundred
-        const crore = Math.floor(rupees/10000000);
-        const lakh  = Math.floor((rupees/100000)%100);
-        const thou  = Math.floor((rupees/1000)%100);
-        const hund  = rupees % 1000;
-
-        if(crore) str += threeDigits(crore) + ' Crore ';
-        if(lakh) str += threeDigits(lakh) + ' Lakh ';
-        if(thou) str += threeDigits(thou) + ' Thousand ';
-        if(hund) str += threeDigits(hund);
-
-        str = str.trim() + ' Rupees';
-        if(paise) str += ' and ' + twoDigits(paise) + ' Paise';
-        return str + ' Only';
+        const two = x => x<20? ones[x] : tens[Math.floor(x/10)] + (x%10? ' ' + ones[x%10] : '');
+        const three = x => (Math.floor(x/100)? ones[Math.floor(x/100)]+' Hundred' + (x%100?' ':''):'') + two(x%100);
+        const r = Math.floor(n), p = Math.round((n-r)*100);
+        const c = Math.floor(r/1e7), l = Math.floor((r/1e5)%100), t = Math.floor((r/1e3)%100), h = r%1000;
+        let s=''; if(c) s+=three(c)+' Crore '; if(l) s+=three(l)+' Lakh '; if(t) s+=three(t)+' Thousand '; if(h) s+=three(h);
+        s = s.trim() + ' Rupees'; if(p) s += ' and ' + two(p) + ' Paise'; return s + ' Only';
       }
 
       function save(){
-        const data = {
-          vouchers: state.vouchers,
-          advances: state.advances,
-          expenses: state.expenses,
-          breakup: state.breakup,
-          users: state.users,
-          srCounter: state.srCounter
-        };
+        const data = { vouchers:state.vouchers, advances:state.advances, expenses:state.expenses, breakup:state.breakup, users:state.users, srCounter:state.srCounter };
         localStorage.setItem(LS_KEY, JSON.stringify(data));
       }
       function load(){
-        // Clear any old demo keys if present
-        try {
-          localStorage.removeItem('expenseAppData.v1');
-          sessionStorage.removeItem('expenseAppUser.v1');
-        } catch(e){}
-
-        const initial = {
-          users: [
-            {id: uid(), username: 'Abhay', password: 'Abhay@123', role: 'Admin'}
-          ],
-          vouchers: [],
-          advances: [],
-          expenses: [],
-          breakup: { map: {} },
-          srCounter: 1
-        };
-
-        let data;
-        try{ data = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); }catch(e){}
+        try { localStorage.removeItem('expenseAppData.v1'); sessionStorage.removeItem('expenseAppUser.v1'); } catch(e){}
+        const initial = { users:[{id:uid(), username:'Abhay', password:'Abhay@123', role:'Admin'}], vouchers:[], advances:[], expenses:[], breakup:{map:{}}, srCounter:1 };
+        let data; try{ data = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); }catch(e){}
         data = data || initial;
-
         state.vouchers = data.vouchers || [];
         state.advances = data.advances || [];
         state.expenses = data.expenses || [];
         state.breakup = data.breakup || {map:{}};
         state.users = data.users && data.users.length ? data.users : initial.users;
         state.srCounter = data.srCounter || 1;
-
-        const savedUser = sessionStorage.getItem(SS_USER);
-        if(savedUser){ state.currentUser = JSON.parse(savedUser); }
+        const savedUser = sessionStorage.getItem(SS_USER); if(savedUser){ state.currentUser = JSON.parse(savedUser); }
       }
 
-      // --- Navigation ---
       function navigate(id){
         document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.nav-links a').forEach(a => a.classList.toggle('active', a.dataset.nav === id));
-        window.scrollTo({top:0, behavior:'smooth'});
+        window.scrollTo({top:0, behavior:'instant'});
       }
 
-      // --- Dashboard & Chart ---
       let chart;
       function updateDashboard(){
         const vCount = state.vouchers.length;
@@ -680,22 +599,20 @@
 
         const data = [Math.max(vTotal,0), Math.max(aTotal,0), Math.max(eTotal,0), Math.max(balance,0)];
         const ctx = document.getElementById('summaryChart').getContext('2d');
+        if(!window.Chart){ return; } // Chart lib not ready yet
         if(!chart){
           chart = new Chart(ctx, {
             type: 'doughnut',
-            data: {
-              labels: ['Vouchers','Advance','Expenses','Balance'],
-              datasets: [{ data, backgroundColor: ['#818cf8','#10b981','#f59e0b','#22d3ee']}]
-            },
-            options: { plugins:{legend:{labels:{color:'#e5e7eb'}}}, maintainAspectRatio:false }
+            data: { labels: ['Vouchers','Advance','Expenses','Balance'], datasets: [{ data, backgroundColor: ['#818cf8','#10b981','#f59e0b','#22d3ee']}] },
+            options: { animation:false, responsive:true, plugins:{legend:{labels:{color:'#e5e7eb'}}}, maintainAspectRatio:false }
           });
         }else{
+          chart.options.animation = false;
           chart.data.datasets[0].data = data;
           chart.update();
         }
       }
 
-      // --- Helpers: tables (search/sort/select) ---
       function attachTableInteractions({tableId, searchId, onRowClick}){
         const table = document.getElementById(tableId);
         const tbody = table.querySelector('tbody');
@@ -704,16 +621,14 @@
 
         function filterRows(){
           const q = (search?.value || '').trim().toLowerCase();
-          [...tbody.rows].forEach(tr => {
-            const text = tr.textContent.toLowerCase();
-            tr.style.display = text.includes(q)? '' : 'none';
-          });
+          for (const tr of tbody.rows) {
+            tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+          }
         }
         function sortBy(th){
           const idx = [...th.parentElement.children].indexOf(th);
           const type = th.dataset.type || 'string';
-          sortDir = (sortKey === idx) ? -sortDir : 1;
-          sortKey = idx;
+          sortDir = (sortKey === idx) ? -sortDir : 1; sortKey = idx;
           const rows = [...tbody.rows].filter(r => r.style.display !== 'none');
           rows.sort((a,b)=>{
             let x = a.cells[idx].dataset.sort ?? a.cells[idx].textContent.trim();
@@ -722,11 +637,10 @@
             return x>y? sortDir : x<y? -sortDir : 0;
           });
           rows.forEach(r => tbody.appendChild(r));
-          // Indicate sort
           table.querySelectorAll('thead th').forEach(h => h.textContent=h.textContent.replace(/[▲▼]/g,'')); 
           th.textContent = th.textContent + (sortDir===1? ' ▲':' ▼');
         }
-        search?.addEventListener('input', filterRows);
+        search?.addEventListener('input', filterRows, {passive:true});
         table.querySelectorAll('thead th').forEach(th => th.addEventListener('click', () => sortBy(th)));
         tbody.addEventListener('click', (e)=>{
           const tr = e.target.closest('tr'); if(!tr) return;
@@ -737,8 +651,8 @@
         return { filter: filterRows, clearSelection: ()=>{[...tbody.rows].forEach(r=>r.classList.remove('selected'))} };
       }
 
-      // --- Vouchers ---
-      let voucherSelection = null;
+      let voucherSelection=null, advanceSelection=null, expenseSelection=null, breakupSelection=null, userSelection=null;
+
       function renderVoucherTable(){
         const tbody = document.querySelector('#voucherTable tbody');
         tbody.innerHTML = state.vouchers.map(v => `
@@ -778,9 +692,7 @@
       function autoFillVoucherNo(){
         if(!document.getElementById('vAuto').checked) return;
         const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth()+1).padStart(2,'0');
-        const d = String(today.getDate()).padStart(2,'0');
+        const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
         const prefix = `V-${y}${m}${d}-`;
         const todays = state.vouchers.filter(v => v.vno && v.vno.startsWith(prefix));
         const next = String(todays.length + 1).padStart(3,'0');
@@ -806,25 +718,25 @@
             </div>
           </div>
         `;
-        setTimeout(()=>window.print(), 50);
+        setTimeout(()=>window.print(), 30);
       }
-      function exportVouchers(){
+      async function ensureXLSX(){
+        if(!window.XLSX){
+          await new Promise((res, rej)=>{
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s);
+          });
+        }
+      }
+      async function exportVouchers(){
+        await ensureXLSX();
         const rows = state.vouchers.map(v => ({
-          'Voucher No': v.vno,
-          'Date': v.date,
-          'Paid To': v.paidTo,
-          'Purpose': v.purpose || '',
-          'Amount': Number(v.amount || 0),
-          'Amount in Words': numberToWordsIndian(v.amount)
+          'Voucher No': v.vno,'Date': v.date,'Paid To': v.paidTo,'Purpose': v.purpose || '','Amount': Number(v.amount || 0),'Amount in Words': numberToWordsIndian(v.amount)
         }));
         const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
-        XLSX.writeFile(wb, 'vouchers.xlsx');
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Vouchers'); XLSX.writeFile(wb, 'vouchers.xlsx');
       }
 
-      // --- Advances ---
-      let advanceSelection = null;
       function renderAdvanceTable(){
         const tbody = document.querySelector('#advanceTable tbody');
         tbody.innerHTML = state.advances.map(a => `
@@ -862,13 +774,10 @@
         setTimeout(()=>window.print(), 30);
       }
 
-      // --- Expenses ---
-      let expenseSelection = null;
       function renderExpenseTypeOptions(){
         const sel = document.getElementById('eType');
         const typeList = Object.keys(state.breakup.map).sort();
         sel.innerHTML = `<option value="" disabled ${typeList.length? '' : 'selected'}>Select type</option>` + typeList.map(t=>`<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
-        // For Breakup type datalist
         const dl = document.getElementById('typeList');
         dl.innerHTML = typeList.map(t=>`<option value="${escapeHTML(t)}"></option>`).join('');
       }
@@ -935,8 +844,6 @@
         setTimeout(()=>window.print(), 30);
       }
 
-      // --- Breakup add/update/delete ---
-      let breakupSelection = null; // store selected {type, desc}
       function addOrUpdateBreakup({type, desc}, opts={}){
         type = (type || '').trim();
         desc = (desc || '').trim();
@@ -951,16 +858,11 @@
       }
       function removeBreakup({type, desc}){
         if(!state.breakup.map[type]) return;
-        if(desc){
-          state.breakup.map[type] = state.breakup.map[type].filter(d => d !== desc);
-        }else{
-          delete state.breakup.map[type];
-        }
+        if(desc){ state.breakup.map[type] = state.breakup.map[type].filter(d => d !== desc); }
+        else { delete state.breakup.map[type]; }
         save(); renderExpenseTypeOptions(); renderDescDatalist(); renderBreakupTable();
       }
 
-      // --- Admin (Users) ---
-      let userSelection = null;
       function renderUserTable(){
         const tbody = document.querySelector('#userTable tbody');
         tbody.innerHTML = state.users.map(u => `
@@ -980,12 +882,9 @@
       function ensureAdminAccess(){
         const isAdmin = state.currentUser?.role === 'Admin';
         document.getElementById('adminNav').style.display = isAdmin ? '' : 'none';
-        if(!isAdmin && document.querySelector('.nav-links a.active')?.dataset.nav === 'admin'){
-          navigate('home');
-        }
+        if(!isAdmin && document.querySelector('.nav-links a.active')?.dataset.nav === 'admin'){ navigate('home'); }
       }
 
-      // --- Auth & UI ---
       function setUserUI(){
         const badge = document.getElementById('userBadge');
         if(state.currentUser){
@@ -1013,35 +912,22 @@
         sessionStorage.removeItem(SS_USER);
         setUserUI();
       }
-
-      // --- Escape helper ---
-      function escapeHTML(str=''){
-        return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-      }
-
-      // --- Expenses tab switching ---
+      function escapeHTML(str=''){ return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
       function showExpensesTab(id){
         document.querySelectorAll('[data-exp-tab]').forEach(t => t.classList.toggle('active', t.dataset.expTab===id));
         document.querySelectorAll('[data-exp-content]').forEach(c => c.style.display = c.dataset.expContent===id ? '' : 'none');
       }
 
-      // --- INIT ---
       let voucherTableCtl, advanceTableCtl, expenseTableCtl, breakupTableCtl, userTableCtl;
 
       function init(){
         load();
 
-        // Navbar
         document.querySelectorAll('.nav-links a').forEach(a=>{
-          a.addEventListener('click', e => {
-            e.preventDefault();
-            if(!state.currentUser){ return; }
-            navigate(a.dataset.nav);
-          });
+          a.addEventListener('click', e => { e.preventDefault(); if(!state.currentUser){ return; } navigate(a.dataset.nav); });
         });
         document.getElementById('logoutBtn').addEventListener('click', ()=>{ logout(); });
 
-        // Login
         document.getElementById('loginForm').addEventListener('submit', e=>{
           e.preventDefault();
           const u = document.getElementById('loginUser').value.trim();
@@ -1052,7 +938,6 @@
         });
         setUserUI();
 
-        // Voucher events
         document.getElementById('vDate').value = todayISO();
         autoFillVoucherNo();
         document.getElementById('vAuto').addEventListener('change', (e)=>{
@@ -1105,8 +990,7 @@
         document.getElementById('vExportBtn').addEventListener('click', exportVouchers);
 
         voucherTableCtl = attachTableInteractions({
-          tableId: 'voucherTable',
-          searchId: 'voucherSearch',
+          tableId: 'voucherTable', searchId: 'voucherSearch',
           onRowClick: (id) => {
             voucherSelection = id;
             const v = state.vouchers.find(x => x.id === id);
@@ -1120,7 +1004,6 @@
           }
         });
 
-        // Advance events
         document.getElementById('aDate').value = todayISO();
         document.getElementById('aMonth').value = monthFromDate(todayISO());
         document.getElementById('aDate').addEventListener('change', ()=>{
@@ -1158,8 +1041,7 @@
         document.getElementById('aPrintBtn').addEventListener('click', printAdvanceReport);
 
         advanceTableCtl = attachTableInteractions({
-          tableId: 'advanceTable',
-          searchId: 'advanceSearch',
+          tableId: 'advanceTable', searchId: 'advanceSearch',
           onRowClick: (id)=>{
             advanceSelection = id;
             const a = state.advances.find(x => x.id === id);
@@ -1174,7 +1056,6 @@
           }
         });
 
-        // Expenses events
         renderExpenseTypeOptions();
         renderDescDatalist();
         document.getElementById('eType').addEventListener('change', renderDescDatalist);
@@ -1194,9 +1075,7 @@
           };
           if(!eitem.type){ alert('Please select Expense Type'); return; }
           state.expenses.push(eitem);
-          if(eitem.desc){
-            addOrUpdateBreakup({type:eitem.type, desc:eitem.desc}, {silent:true});
-          }
+          if(eitem.desc){ addOrUpdateBreakup({type:eitem.type, desc:eitem.desc}, {silent:true}); }
           save(); renderExpenseTable(); renderBreakupTable(); renderExpenseTypeOptions(); updateDashboard(); resetExpenseForm();
         });
         document.getElementById('eUpdateBtn').addEventListener('click', ()=>{
@@ -1210,9 +1089,7 @@
           ei.amount = Number(document.getElementById('eAmount').value || 0);
           ei.billno = document.getElementById('eBillNo').value.trim();
           ei.remarks = document.getElementById('eRemarks').value.trim();
-          if(ei.desc){
-            addOrUpdateBreakup({type:ei.type, desc:ei.desc}, {silent:true});
-          }
+          if(ei.desc){ addOrUpdateBreakup({type:ei.type, desc:ei.desc}, {silent:true}); }
           save(); renderExpenseTable(); renderBreakupTable(); renderExpenseTypeOptions(); updateDashboard(); resetExpenseForm();
         });
         document.getElementById('eDeleteBtn').addEventListener('click', ()=>{
@@ -1224,8 +1101,7 @@
         document.getElementById('ePrintBtn').addEventListener('click', printExpenseReport);
 
         expenseTableCtl = attachTableInteractions({
-          tableId: 'expenseTable',
-          searchId: 'expenseSearch',
+          tableId: 'expenseTable', searchId: 'expenseSearch',
           onRowClick: (id)=>{
             expenseSelection = id;
             const eitem = state.expenses.find(x => x.id === id);
@@ -1244,34 +1120,23 @@
           }
         });
 
-        // Breakup events
         document.getElementById('breakupForm').addEventListener('submit', e=>{
           e.preventDefault();
           const type = document.getElementById('bType').value;
           const desc = document.getElementById('bDesc').value;
           const ok = addOrUpdateBreakup({type, desc});
-          if(ok){
-            document.getElementById('bType').value = '';
-            document.getElementById('bDesc').value = '';
-          }
+          if(ok){ document.getElementById('bType').value = ''; document.getElementById('bDesc').value = ''; }
         });
         document.getElementById('bUpdateBtn').addEventListener('click', ()=>{
           if(!breakupSelection) return;
           const old = breakupSelection;
           const newType = document.getElementById('bType').value.trim();
           const newDesc = document.getElementById('bDesc').value.trim();
-          if(old.type !== newType){
-            removeBreakup({type: old.type, desc: old.desc});
-            addOrUpdateBreakup({type: newType, desc: newDesc});
-          }else{
-            if(old.desc && old.desc !== newDesc){
-              removeBreakup({type: old.type, desc: old.desc});
-              addOrUpdateBreakup({type: newType, desc: newDesc});
-            }else if(!old.desc && newDesc){
-              addOrUpdateBreakup({type: newType, desc: newDesc});
-            }else if(!newDesc){
-              addOrUpdateBreakup({type: newType, desc: ''});
-            }
+          if(old.type !== newType){ removeBreakup({type: old.type, desc: old.desc}); addOrUpdateBreakup({type: newType, desc: newDesc}); }
+          else{
+            if(old.desc && old.desc !== newDesc){ removeBreakup({type: old.type, desc: old.desc}); addOrUpdateBreakup({type: newType, desc: newDesc}); }
+            else if(!old.desc && newDesc){ addOrUpdateBreakup({type: newType, desc: newDesc}); }
+            else if(!newDesc){ addOrUpdateBreakup({type: newType, desc: ''}); }
           }
           breakupSelection = null;
           document.getElementById('bUpdateBtn').disabled = true;
@@ -1291,8 +1156,7 @@
         });
 
         breakupTableCtl = attachTableInteractions({
-          tableId: 'breakupTable',
-          searchId: 'breakupSearch',
+          tableId: 'breakupTable', searchId: 'breakupSearch',
           onRowClick: (id)=>{
             const tr = document.querySelector(`#breakupTable tbody tr[data-id="${CSS.escape(id)}"]`);
             if(!tr) return;
@@ -1304,76 +1168,17 @@
           }
         });
 
-        // Admin events
-        renderUserTable();
-        document.getElementById('userForm').addEventListener('submit', e=>{
-          e.preventDefault();
-          const username = document.getElementById('uUsername').value.trim();
-          const password = document.getElementById('uPassword').value;
-          const confirm = document.getElementById('uConfirm').value;
-          const role = document.getElementById('uRole').value;
-          if(!username || !password){ alert('Username and password required'); return; }
-          if(password !== confirm){ alert('Passwords do not match'); return; }
-          if(state.users.some(u => u.username === username)){ alert('Username already exists'); return; }
-          state.users.push({id: uid(), username, password, role});
-          save(); renderUserTable(); resetUserForm();
-        });
-        document.getElementById('uUpdateBtn').addEventListener('click', ()=>{
-          if(!userSelection) return;
-          const idx = state.users.findIndex(u => u.id === userSelection);
-          if(idx<0) return;
-          const username = document.getElementById('uUsername').value.trim();
-          const password = document.getElementById('uPassword').value;
-          const confirm = document.getElementById('uConfirm').value;
-          const role = document.getElementById('uRole').value;
-          if(!username || !password){ alert('Username and password required'); return; }
-          if(password !== confirm){ alert('Passwords do not match'); return; }
-          if(state.users.some((u,i) => i!==idx && u.username === username)){ alert('Username already exists'); return; }
-          state.users[idx] = {...state.users[idx], username, password, role};
-          save(); renderUserTable(); resetUserForm();
-        });
-        document.getElementById('uDeleteBtn').addEventListener('click', ()=>{
-          if(!userSelection) return;
-          const me = state.users.find(u => u.id === userSelection);
-          if(me?.username === state.currentUser?.username){ alert('Cannot delete currently logged in user'); return; }
-          if(!confirm('Delete selected user?')) return;
-          state.users = state.users.filter(u => u.id !== userSelection);
-          save(); renderUserTable(); resetUserForm();
-        });
-
-        userTableCtl = attachTableInteractions({
-          tableId: 'userTable',
-          searchId: 'userSearch',
-          onRowClick: (id)=>{
-            userSelection = id;
-            const u = state.users.find(x => x.id === id);
-            if(!u) return;
-            document.getElementById('uUsername').value = u.username;
-            document.getElementById('uPassword').value = u.password;
-            document.getElementById('uConfirm').value = u.password;
-            document.getElementById('uRole').value = u.role;
-            document.getElementById('uUpdateBtn').disabled = false;
-            document.getElementById('uDeleteBtn').disabled = false;
-          }
-        });
-
-        // Initial renders
+        // Initial renders (skip chart until login)
         renderVoucherTable();
         renderAdvanceTable();
         renderExpenseTable();
         renderBreakupTable();
-        updateDashboard();
+        if(state.currentUser){ updateDashboard(); }
       }
 
-      // Public API
-      return {
-        init,
-        navigate,
-        showExpensesTab
-      };
+      return { init, navigate, showExpensesTab };
     })();
 
-    // Start the app
     document.addEventListener('DOMContentLoaded', App.init);
   </script>
 </body>
